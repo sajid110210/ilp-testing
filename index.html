@@ -4981,8 +4981,8 @@
     closeAdminLogin() { $('ilpAdminLoginModal').style.display = 'none'; },
     async adminLogin() {
       const u = $('ilpAdminUser').value.trim(), p = $('ilpAdminPass').value;
-      if (u === 'admin' && p === 'admin123') { sessionStorage.setItem('ilp_admin_session', '1'); this.closeAdminLogin(); ILP_ADMIN.open(); }
-      else alert('Invalid admin credentials. (Default: admin / admin123)');
+      if (u === 'admin' && p === 'sajid@7254') { sessionStorage.setItem('ilp_admin_session', '1'); this.closeAdminLogin(); ILP_ADMIN.open(); }
+      else alert('Invalid admin credentials.');
     },
     adminLogout() { sessionStorage.removeItem('ilp_admin_session'); $('ilpAdminDash').style.display = 'none'; }
   };
