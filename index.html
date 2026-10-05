@@ -4794,6 +4794,508 @@
   </div>
 </div>
 
+<!-- ============================================================
+     iLovePrint ADD-ON v4 — CROSS-DEVICE CLOUD SYNC
+     Place this RIGHT BEFORE </body>, AFTER add-on v3.
+     ============================================================ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ---------------- constants ---------------- */
+  const ACC_KEY  = 'iloveprint_account';
+  const SET_KEY  = 'iloveprint_settings_v2';
+  const USERS_KEY= 'iloveprint_users_db';
+  const AKEY_SES = 'iloveprint_admin_key';
+
+  const $ = id => document.getElementById(id);
+
+  const LS = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  function cfg() {
+    return Object.assign({ amount: 50, planDays: 30, sheetUrl: '' }, LS.get(SET_KEY, {}));
+  }
+
+  function cloudUrl() {
+    const c = cfg();
+    if (c.sheetUrl) return c.sheetUrl;
+    try {
+      if (typeof GOOGLE_SHEET_API_URL === 'string' && GOOGLE_SHEET_API_URL) return GOOGLE_SHEET_API_URL;
+    } catch (e) {}
+    return '';
+  }
+
+  function adminKey() { return sessionStorage.getItem(AKEY_SES) || ''; }
+
+  /* ---------------- cloud transport (GET, CORS-safe) ---------------- */
+  async function cloud(params) {
+    const base = cloudUrl();
+    if (!base) { const e = new Error('NO_CLOUD_URL'); e.code = 'NO_CLOUD_URL'; throw e; }
+    const qs = new URLSearchParams(params).toString();
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 25000);
+    try {
+      const res = await fetch(base + (base.indexOf('?') >= 0 ? '&' : '?') + qs, {
+        method: 'GET', redirect: 'follow', cache: 'no-store', signal: ctl.signal
+      });
+      const txt = await res.text();
+      try { return JSON.parse(txt); }
+      catch (e) {
+        const err = new Error('BAD_RESPONSE: ' + txt.slice(0, 160));
+        throw err;
+      }
+    } finally { clearTimeout(timer); }
+  }
+
+  /* ---------------- busy overlay ---------------- */
+  let busyEl = null;
+  function busy(on, msg) {
+    if (on) {
+      if (!busyEl) {
+        const st = document.createElement('style');
+        st.textContent = '@keyframes ilpSpin{to{transform:rotate(360deg)}}' +
+          '.ilp-spin{width:18px;height:18px;border:3px solid #cbd5e1;border-top-color:#2563eb;' +
+          'border-radius:50%;animation:ilpSpin .7s linear infinite;display:inline-block}';
+        document.head.appendChild(st);
+        busyEl = document.createElement('div');
+        busyEl.style.cssText = 'position:fixed;inset:0;background:rgba(6,12,26,.6);' +
+          'backdrop-filter:blur(4px);z-index:100999;display:flex;align-items:center;justify-content:center;';
+        busyEl.innerHTML = '<div style="background:#fff;padding:20px 28px;border-radius:16px;' +
+          'font-weight:700;color:#0f172a;font-size:14px;display:flex;gap:12px;align-items:center;' +
+          'box-shadow:0 20px 60px rgba(0,0,0,.35);font-family:inherit;">' +
+          '<span class="ilp-spin"></span><span id="ilpBusyMsg">Working…</span></div>';
+        document.body.appendChild(busyEl);
+      }
+      $('ilpBusyMsg').textContent = msg || 'Working…';
+      busyEl.style.display = 'flex';
+    } else if (busyEl) busyEl.style.display = 'none';
+  }
+
+  /* ---------------- account mapping ---------------- */
+  function saveAccountFromServer(u) {
+    const prev = LS.get(ACC_KEY, {}) || {};
+    const acc = {
+      name: u.name || prev.name || '',
+      shopName: u.shopName || prev.shopName || '',
+      mobile: u.mobile,
+      address: u.address || prev.address || '',
+      password: u.password || prev.password || u.mobile,
+      status: u.status || 'pending_payment',
+      amount: u.amount != null ? u.amount : (prev.amount || cfg().amount),
+      registeredAt: u.registeredAt ? Date.parse(u.registeredAt) : (prev.registeredAt || Date.now()),
+      paidAt: u.paidAt ? Date.parse(u.paidAt) : prev.paidAt || null,
+      approvedAt: u.approvedAt ? Date.parse(u.approvedAt) : prev.approvedAt || null,
+      rechargeDate: u.rechargeDate ? Date.parse(u.rechargeDate) : prev.rechargeDate || null,
+      expiryDate: u.expiryDate ? Date.parse(u.expiryDate) : prev.expiryDate || null,
+      planDays: u.planDays || prev.planDays || cfg().planDays,
+      stats: u.stats || prev.stats || { idCards:0, passportPhotos:0, cropperPrints:0, bgRemovals:0, enhancements:0 },
+      lastSync: Date.now()
+    };
+    LS.set(ACC_KEY, acc);
+    try {
+      LS.set('iloveprint_user_profile', {
+        name: acc.name, shopName: acc.shopName, mobile: acc.mobile, address: acc.address
+      });
+    } catch (e) {}
+    return acc;
+  }
+
+  function planInfo(acc) {
+    const planDays = acc.planDays || cfg().planDays || 30;
+    const expiry = acc.expiryDate || null;
+    const now = Date.now();
+    let daysLeft = 0, expired = false, expiringSoon = false;
+    if (expiry) {
+      daysLeft = Math.ceil((expiry - now) / 86400000);
+      expired = now > expiry;
+      expiringSoon = !expired && daysLeft <= 5;
+    }
+    return { expiry, daysLeft, expired, expiringSoon, planDays };
+  }
+
+  function refreshBadge() {
+    const acc = LS.get(ACC_KEY, null);
+    const badge = $('ilpUserBadge');
+    if (!badge) return;
+    if (!acc) { badge.style.display = 'none'; return; }
+    badge.style.display = 'flex';
+    $('ilpUserName').textContent = acc.name || 'User';
+    let st = acc.status || 'pending_payment';
+    if (st === 'approved') {
+      const p = planInfo(acc);
+      if (p.expired) st = 'expired';
+      else if (p.expiringSoon) st = 'expiring';
+    }
+    $('ilpUserStatus').textContent = st.replace('_', ' ');
+    const dot = $('ilpUserDot');
+    dot.className = 'ilp-dot' +
+      (st === 'approved' ? ' ok' : (st === 'expired' || st === 'rejected' || st === 'suspended') ? ' bad' : '');
+  }
+
+  /* ---------------- status router ---------------- */
+  function routeByStatus(acc) {
+    const st = acc.status;
+    if (st === 'approved') {
+      const p = planInfo(acc);
+      if (p.expired) { ILP_AUTH.showExpired(); return; }
+      ILP_AUTH.hideAll();
+      return;
+    }
+    if (st === 'pending_approval') { ILP_AUTH.showPending(); return; }
+    if (st === 'pending_payment')  { ILP_AUTH.showPaymentModal(); return; }
+    if (st === 'rejected' || st === 'suspended') {
+      ILP_AUTH.hideAll();
+      alert('Your account is ' + st + '. Please contact the admin.');
+      return;
+    }
+    ILP_AUTH.showPaymentModal();
+  }
+
+  /* ================================================================
+     OVERRIDE — LOGIN  (hits the cloud, falls back to local)
+     ================================================================ */
+  const ORIG = {
+    submitLogin: ILP_AUTH.submitLogin,
+    submitRegistration: ILP_AUTH.submitRegistration,
+    markPaid: ILP_AUTH.markPaid,
+    checkStatus: ILP_AUTH.checkStatus
+  };
+
+  ILP_AUTH.submitLogin = async function () {
+    if (!cloudUrl()) return ORIG.submitLogin.apply(this, arguments);
+
+    const mobile = ($('ilpLoginMobile').value || '').trim();
+    const pass   = $('ilpLoginPass').value;
+    if (!/^\d{10}$/.test(mobile)) return alert('Enter a valid 10-digit mobile number.');
+    if (!pass) return alert('Enter your password.');
+
+    busy(true, 'Signing in…');
+    let user = null;
+    try {
+      const r = await cloud({ action: 'login', mobile, password: pass });
+      busy(false);
+      if (!r.ok) {
+        if (r.code === 'NOT_FOUND') return alert('This mobile number is not registered yet. Please register.');
+        if (r.code === 'BAD_PASS')  return alert('Incorrect password.');
+        return alert(r.msg || 'Login failed.');
+      }
+      user = r.user;
+    } catch (err) {
+      busy(false);
+      return offlineLogin(mobile, pass, err);
+    }
+
+    const acc = saveAccountFromServer(user);
+    refreshBadge();
+    routeByStatus(acc);
+    if (acc.status === 'approved' && !planInfo(acc).expired) alert('Welcome back, ' + acc.name + '!');
+  };
+
+  function offlineLogin(mobile, pass, err) {
+    const users = LS.get(USERS_KEY, []);
+    const u = users.find(x => x.mobile === mobile);
+    if (!u) {
+      return alert('Cannot reach the server.\n\n' + ((err && err.message) || '') +
+        '\n\nCheck your internet connection and the Google Apps Script URL.');
+    }
+    if ((u.password || u.mobile) !== pass) return alert('Incorrect password.');
+    const acc = saveAccountFromServer(u);
+    refreshBadge();
+    routeByStatus(acc);
+    alert('⚠️ Offline mode — showing data saved on this device only.');
+  }
+
+  /* ================================================================
+     OVERRIDE — REGISTRATION
+     ================================================================ */
+  ILP_AUTH.submitRegistration = async function () {
+    if (!cloudUrl()) return ORIG.submitRegistration.apply(this, arguments);
+
+    const name   = ($('ilpRegName').value || '').trim();
+    const shop   = ($('ilpRegShop').value || '').trim();
+    const mobile = ($('ilpRegMobile').value || '').trim();
+    const addr   = ($('ilpRegAddr').value || '').trim();
+    if (!name || !shop || !addr) return alert('Please fill all fields.');
+    if (!/^\d{10}$/.test(mobile)) return alert('Enter a valid 10-digit mobile number.');
+
+    busy(true, 'Creating your account…');
+    let r;
+    try {
+      r = await cloud({
+        action: 'register', mobile, name, shopName: shop,
+        address: addr, password: mobile, amount: cfg().amount
+      });
+    } catch (err) {
+      busy(false);
+      return alert('Cannot reach the server. Registration needs an internet connection.\n\n' + err.message);
+    }
+    busy(false);
+
+    if (!r.ok) {
+      if (r.code === 'EXISTS') { alert(r.msg); return ILP_AUTH.showLogin(); }
+      return alert(r.msg || 'Registration failed.');
+    }
+
+    const acc = saveAccountFromServer(r.user);
+    try { const om = $('userRegistrationModal'); if (om) om.style.display = 'none'; } catch (e) {}
+    refreshBadge();
+    routeByStatus(acc);
+  };
+
+  /* ================================================================
+     OVERRIDE — PAYMENT MARKED
+     ================================================================ */
+  ILP_AUTH.markPaid = async function () {
+    const acc = LS.get(ACC_KEY, null);
+    if (!acc) return ILP_AUTH.showRegistration();
+    if (!cloudUrl()) return ORIG.markPaid.apply(this, arguments);
+
+    busy(true, 'Submitting…');
+    let ok = false;
+    try {
+      const r = await cloud({ action: 'mark_paid', mobile: acc.mobile, amount: cfg().amount });
+      ok = !!(r && r.ok);
+    } catch (e) { ok = false; }
+    busy(false);
+
+    acc.status = 'pending_approval';
+    acc.paidAt = Date.now();
+    LS.set(ACC_KEY, acc);
+    refreshBadge();
+    ILP_AUTH.showPending();
+    startPendingPoll();
+
+    if (!ok) alert('⚠️ Payment recorded on this device, but the server could not be reached. ' +
+      'Please tell the admin your mobile number so they can verify.');
+  };
+
+  /* ================================================================
+     OVERRIDE — MANUAL STATUS CHECK
+     ================================================================ */
+  ILP_AUTH.checkStatus = async function () {
+    const acc = LS.get(ACC_KEY, null);
+    if (!acc) return ILP_AUTH.showRegistration();
+    if (!cloudUrl()) return ORIG.checkStatus.apply(this, arguments);
+
+    busy(true, 'Checking…');
+    try {
+      const r = await cloud({ action: 'status', mobile: acc.mobile });
+      busy(false);
+      if (!r.ok) return alert(r.msg || 'Could not check status.');
+      const fresh = saveAccountFromServer(r.user);
+      refreshBadge();
+
+      if (fresh.status === 'approved') {
+        const p = planInfo(fresh);
+        if (p.expired) { stopPendingPoll(); return ILP_AUTH.showExpired(); }
+        stopPendingPoll();
+        ILP_AUTH.hideAll();
+        alert('🎉 Approved! Your plan is active until ' +
+          new Date(p.expiry).toLocaleDateString('en-IN') + '.');
+      } else if (fresh.status === 'rejected' || fresh.status === 'suspended') {
+        stopPendingPoll();
+        alert('Status: ' + fresh.status + '. Please contact the admin.');
+      } else {
+        alert('Still waiting for admin approval.');
+      }
+    } catch (e) {
+      busy(false);
+      alert('Cannot reach the server: ' + e.message);
+    }
+  };
+
+  /* ================================================================
+     AUTO-POLL while the pending screen is open
+     ================================================================ */
+  let pollTimer = null;
+
+  function startPendingPoll() {
+    stopPendingPoll();
+    pollTimer = setInterval(async () => {
+      const acc = LS.get(ACC_KEY, null);
+      if (!acc || acc.status !== 'pending_approval') { stopPendingPoll(); return; }
+      try {
+        const r = await cloud({ action: 'status', mobile: acc.mobile });
+        if (r && r.ok && r.user && r.user.status && r.user.status !== 'pending_approval') {
+          const fresh = saveAccountFromServer(r.user);
+          refreshBadge();
+          stopPendingPoll();
+          if (fresh.status === 'approved') {
+            const p = planInfo(fresh);
+            if (p.expired) ILP_AUTH.showExpired();
+            else { ILP_AUTH.hideAll(); alert('🎉 Your account has been approved! All tools are unlocked.'); }
+          } else {
+            ILP_AUTH.hideAll();
+            alert('Your account status changed to: ' + fresh.status);
+          }
+        }
+      } catch (e) { /* silent */ }
+    }, 12000);
+  }
+  function stopPendingPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+
+  const _showPending = ILP_AUTH.showPending;
+  ILP_AUTH.showPending = function () { _showPending.apply(this, arguments); startPendingPoll(); };
+
+  const _hideAll = ILP_AUTH.hideAll;
+  ILP_AUTH.hideAll = function () { _hideAll.apply(this, arguments); stopPendingPoll(); };
+
+  /* ================================================================
+     BACKGROUND REVALIDATION on page load / focus
+     ================================================================ */
+  async function revalidate() {
+    const acc = LS.get(ACC_KEY, null);
+    if (!acc || !acc.mobile || !cloudUrl()) return;
+    try {
+      const r = await cloud({ action: 'status', mobile: acc.mobile });
+      if (r && r.ok && r.user) { saveAccountFromServer(r.user); refreshBadge(); }
+    } catch (e) {}
+  }
+  window.addEventListener('focus', revalidate);
+
+  /* ================================================================
+     ADMIN — inject admin-key field into Settings tab
+     ================================================================ */
+  function injectAdminKeyField() {
+    const sheetInput = $('ilpSetSheetUrl');
+    if (!sheetInput || $('ilpSetAdminKey')) return;
+    const wrap = sheetInput.closest('.ilp-field');
+    if (!wrap) return;
+
+    const div = document.createElement('div');
+    div.className = 'ilp-field';
+    div.innerHTML =
+      '<label>Admin Key (required for all admin actions)</label>' +
+      '<input id="ilpSetAdminKey" type="text" placeholder="ILP-XXXXXXXX" autocomplete="off">' +
+      '<small style="color:#94a3b8;font-size:11px;">Get this by running <b>setup()</b> once in ' +
+      'Apps Script → View → Logs.</small>';
+    wrap.parentNode.insertBefore(div, wrap.nextSibling);
+
+    const k = adminKey();
+    if (k) $('ilpSetAdminKey').value = k;
+    $('ilpSetAdminKey').addEventListener('change', e => {
+      sessionStorage.setItem(AKEY_SES, e.target.value.trim());
+    });
+  }
+
+  /* ================================================================
+     ADMIN — open: auto-sync users from cloud
+     ================================================================ */
+  const _adminOpen = ILP_ADMIN.open;
+  ILP_ADMIN.open = function () {
+    _adminOpen.apply(this, arguments);
+    injectAdminKeyField();
+    const k = adminKey();
+    if ($('ilpSetAdminKey') && k) $('ilpSetAdminKey').value = k;
+    setTimeout(() => ILP_ADMIN.refreshFromSheet(true), 250);
+  };
+
+  /* ================================================================
+     ADMIN — refreshFromSheet (cloud authoritative)
+     ================================================================ */
+  ILP_ADMIN.refreshFromSheet = async function (silent) {
+    if (!cloudUrl()) {
+      if (!silent) alert('No Google Apps Script URL configured. Add it in Settings.');
+      return;
+    }
+    const key = adminKey();
+    if (!key) {
+      if (!silent) alert('Enter the Admin Key in the Settings tab first (run setup() in Apps Script).');
+      return;
+    }
+    busy(true, 'Syncing users from cloud…');
+    try {
+      const r = await cloud({ action: 'admin_list', adminKey: key });
+      busy(false);
+      if (!r.ok) {
+        if (!silent) alert(r.msg || 'Sync failed.');
+        return;
+      }
+      const list = (r.users || []).map(u => ({
+        mobile: u.mobile,
+        name: u.name,
+        shopName: u.shopName,
+        address: u.address,
+        password: u.password || u.mobile,
+        status: u.status || 'pending_payment',
+        amount: u.amount,
+        registeredAt: u.registeredAt ? Date.parse(u.registeredAt) : Date.now(),
+        rechargeDate: u.rechargeDate ? Date.parse(u.rechargeDate) : null,
+        expiryDate: u.expiryDate ? Date.parse(u.expiryDate) : null,
+        stats: u.stats || { idCards:0, passportPhotos:0, cropperPrints:0, bgRemovals:0, enhancements:0 }
+      }));
+      localStorage.setItem(USERS_KEY, JSON.stringify(list));
+      ILP_ADMIN.renderUsers();
+      if (!silent) alert('✅ Synced ' + list.length + ' user(s) from the cloud.');
+    } catch (e) {
+      busy(false);
+      if (!silent) alert('Sync failed: ' + e.message);
+    }
+  };
+
+  /* ================================================================
+     ADMIN — write actions go to the cloud, then re-sync
+     ================================================================ */
+  async function adminCall(action, params, label) {
+    if (!cloudUrl()) return alert('No cloud URL configured.');
+    if (!adminKey())  return alert('Enter the Admin Key in Settings first.');
+    busy(true, label || 'Working…');
+    try {
+      const r = await cloud(Object.assign({ action, adminKey: adminKey() }, params));
+      busy(false);
+      if (!r.ok) { alert(r.msg || 'Action failed.'); return false; }
+      await ILP_ADMIN.refreshFromSheet(true);
+      return true;
+    } catch (e) {
+      busy(false);
+      alert('Failed: ' + e.message);
+      return false;
+    }
+  }
+
+  ILP_ADMIN.approve = function (mobile) {
+    return adminCall('admin_status', { mobile, status: 'approved' }, 'Approving…');
+  };
+  ILP_ADMIN.reject = function (mobile) {
+    return adminCall('admin_status', { mobile, status: 'rejected' }, 'Rejecting…');
+  };
+  ILP_ADMIN.suspend = function (mobile) {
+    return adminCall('admin_status', { mobile, status: 'suspended' }, 'Suspending…');
+  };
+  ILP_ADMIN.extend = function (mobile) {
+    const days = cfg().planDays || 30;
+    if (!confirm('Extend ' + mobile + "'s plan by " + days + " days?")) return;
+    return adminCall('admin_extend', { mobile, days }, 'Extending…');
+  };
+  ILP_ADMIN.resetStats = function (mobile) {
+    if (!confirm('Reset usage stats for ' + mobile + '?')) return;
+    return adminCall('admin_reset', { mobile }, 'Resetting…');
+  };
+  ILP_ADMIN.removeUser = function (mobile) {
+    if (!confirm('Delete user ' + mobile + ' from the cloud?\nThis cannot be undone.')) return;
+    return adminCall('admin_delete', { mobile }, 'Deleting…');
+  };
+
+  /* ================================================================
+     INIT
+     ================================================================ */
+  window.addEventListener('DOMContentLoaded', function () {
+    refreshBadge();
+    setTimeout(revalidate, 1200);
+    setTimeout(injectAdminKeyField, 1800);
+  });
+
+})();
+</script>
+<!-- ============ END iLovePrint ADD-ON v4 ============ -->
+
+
+
+
+  
 <button id="ilpAdminFab" class="ilp-fab no-print" onclick="ILP_AUTH.openAdminLogin()" title="Admin">🛡️</button>
 
 <script>
