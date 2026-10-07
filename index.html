@@ -1828,7 +1828,7 @@
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbyEDMmRthQMR05leL9Kish2TZ_RoLpzTjlG7-0Oc_fXSIRvXqk2QNn5YQT5ylD_qnoN/exec";
+    const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbzg9yK1NhH_MkGuXADnt_BxdbNpzk9n80lFdEakvfwxIkND_k673w1vXpuYgx1LMYsX/exec";
 
     let currentActiveStudio = 'landing';
 
@@ -4608,72 +4608,222 @@
   </script>
 
 
+<!-- ============================================================
+     iLovePrint SECURITY PATCH v1 — Obfuscated secrets & DevTools deterrents
+     Inserted BEFORE v2 add-on so ILP_SECRET is available to all code below.
+     ============================================================ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ---- Base64 decoder wrapper (obfuscation, not encryption) ---- */
+  const _d = (b64) => { try { return atob(b64); } catch (e) { return ''; } };
+
+  /* ---- Encoded secrets (base64). Change values by re-encoding in base64. ---- */
+  const _USER_B64 = 'c2FqaWQ3MjU0';            /* sajid7254         */
+  const _PASS_B64 = 'SGVlbmFANzI1NA==';        /* Heena@7254        */
+  const _UPI_B64  = 'OTc2Nzc4NTM1M0BtYms=';    /* 9767785353@mbk    */
+
+  /* ---- SHA-256 hash helper (password is never compared as plaintext) ---- */
+  async function _hash(str) {
+    if (!window.crypto || !crypto.subtle) {
+      /* Fallback DJB2-ish hash if SubtleCrypto is unavailable */
+      let h = 5381;
+      for (let i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i);
+      return 'fb_' + (h >>> 0).toString(36);
+    }
+    const buf = new TextEncoder().encode(str);
+    const dig = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(dig))
+      .map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /* Pre-compute the admin password hash once at startup */
+  let _passHash = null;
+  _hash(_d(_PASS_B64)).then(h => { _passHash = h; });
+
+  /* ---- Public façade ---- */
+  window.ILP_SECRET = {
+    user:     () => _d(_USER_B64),
+    passHash: () => _passHash,
+    hash:     _hash,
+    upi:      () => _d(_UPI_B64)
+  };
+
+  /* ================================================================
+     ANTI-DEVTOOLS DETERRENTS (best-effort — no browser is 100% blockable)
+     ================================================================ */
+
+  /* 1) Block right-click context menu (allow on inputs/textareas) */
+  document.addEventListener('contextmenu', e => {
+    if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+    e.preventDefault();
+  }, false);
+
+  /* 2) Block common inspection keyboard shortcuts */
+  document.addEventListener('keydown', e => {
+    const k = (e.key || '').toUpperCase();
+    /* F12 */
+    if (k === 'F12') { e.preventDefault(); e.stopPropagation(); return false; }
+    /* Ctrl+Shift+I / J / C / K (Chrome/Firefox/Edge DevTools & console) */
+    if (e.ctrlKey && e.shiftKey && (k === 'I' || k === 'J' || k === 'C' || k === 'K')) {
+      e.preventDefault(); e.stopPropagation(); return false;
+    }
+    /* Ctrl+U (view source) & Ctrl+S (save page) */
+    if ((e.ctrlKey || e.metaKey) && (k === 'U' || k === 'S')) {
+      e.preventDefault(); e.stopPropagation(); return false;
+    }
+  }, true);
+
+  /* 3) Block window.open('view-source:...') */
+  const _origOpen = window.open;
+  window.open = function (u, ...rest) {
+    if (typeof u === 'string' && u.trim().toLowerCase().startsWith('view-source:')) return null;
+    return _origOpen.call(this, u, ...rest);
+  };
+
+  /* 4) One-time console warning + periodic console clear */
+  setTimeout(() => {
+    try {
+      console.clear();
+      console.log('%c⛔ STOP',
+        'color:#ef4444;font-size:64px;font-weight:900;text-shadow:3px 3px 0 #000;');
+      console.log('%cThis is a protected application. Do NOT paste any code here.',
+        'color:#f59e0b;font-size:16px;font-weight:bold;');
+      console.log('%cAll activity on this page may be logged.',
+        'color:#64748b;font-size:12px;');
+    } catch (e) {}
+  }, 600);
+  setInterval(() => { try { console.clear(); } catch (e) {} }, 3000);
+})();
+</script>
+<!-- ============ END iLovePrint SECURITY PATCH v1 ============ -->
 
 
 <!-- ============================================================
-     iLovePrint UNIFIED CLOUD AUTHENTICATION (v5)
-     Replaces v1, v2, v3, v4. Fully cross-device compatible.
+     iLovePrint ADD-ON v2 : Auth · Monthly Plan · Stats · Admin
+     Fully additive. Original code untouched.
      ============================================================ -->
-<style>
+<style id="ilpAddonStylesV2">
   .ilp-overlay{position:fixed;inset:0;background:rgba(6,12,26,.78);backdrop-filter:blur(8px);z-index:100900;display:flex;align-items:center;justify-content:center;padding:16px;}
   .ilp-modal{background:#fff;border-radius:22px;padding:26px 26px 22px;max-width:460px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.35);border:1px solid #e2e8f0;max-height:92vh;overflow-y:auto;}
   .ilp-modal h2{font-size:20px;font-weight:800;color:#0f172a;margin-bottom:8px;display:flex;gap:8px;align-items:center;}
+  .ilp-modal h3{font-size:13px;font-weight:800;color:#0f172a;margin:14px 0 8px;text-transform:uppercase;letter-spacing:.04em;}
   .ilp-modal p{font-size:13.5px;color:#475569;line-height:1.55;margin-bottom:12px;}
   .ilp-qr-wrap{text-align:center;padding:14px;background:linear-gradient(135deg,#f8fafc,#eff6ff);border:1.5px dashed #93c5fd;border-radius:16px;margin:12px 0;}
-  .ilp-qr-wrap img{width:240px;height:240px;max-width:100%;border-radius:12px;background:#fff;padding:6px;}
+  .ilp-qr-wrap img{width:240px;height:240px;max-width:100%;border-radius:12px;background:#fff;padding:6px;box-shadow:0 4px 18px rgba(0,0,0,.08);}
+  .ilp-upi-id{margin-top:10px;font-size:13px;color:#0f172a;}
+  .ilp-upi-id b{color:#1d4ed8;font-family:ui-monospace,monospace;}
+  .ilp-note{font-size:12px;color:#64748b;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:9px 12px;line-height:1.5;margin-top:6px;}
+  .ilp-info-box{background:#f1f5f9;border-radius:14px;padding:12px 16px;display:flex;flex-direction:column;gap:6px;font-size:13px;margin:10px 0;}
+  .ilp-info-box div{display:flex;justify-content:space-between;gap:12px;}
+  .ilp-info-box span{color:#64748b;}
+  .ilp-info-box b{color:#0f172a;text-align:right;word-break:break-word;}
   .ilp-btn-row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
   .ilp-btn{flex:1;min-width:120px;padding:11px 14px;border-radius:40px;font-weight:700;font-size:13px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.15s;}
   .ilp-btn.primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;}
+  .ilp-btn.primary:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(37,99,235,.35);}
   .ilp-btn.ghost{background:#f1f5f9;color:#334155;}
+  .ilp-btn.ghost:hover{background:#e2e8f0;}
   .ilp-btn.danger{background:#ef4444;color:#fff;}
   .ilp-field{display:flex;flex-direction:column;gap:5px;margin-top:10px;}
-  .ilp-field label{font-size:11px;font-weight:800;color:#475569;text-transform:uppercase;}
-  .ilp-field input,.ilp-field select{padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:13px;outline:none;}
-  .ilp-user-badge{position:fixed;top:76px;right:14px;z-index:99975;background:rgba(15,23,42,.92);color:#f8fafc;font-size:11.5px;font-weight:600;padding:6px 10px 6px 12px;border-radius:30px;display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.18);cursor:pointer;}
-  .ilp-dot{width:8px;height:8px;border-radius:50%;background:#f59e0b;}
-  .ilp-dot.ok{background:#10b981;}
-  .ilp-dot.bad{background:#ef4444;}
-  .ilp-fab{position:fixed;bottom:18px;left:18px;z-index:99996;width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#0f172a,#334155);color:#fff;border:1.5px solid rgba(255,255,255,.25);font-size:18px;cursor:pointer;}
-  .ilp-dash{background:#0f172a;width:min(1300px,98vw);height:min(92vh,920px);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;color:#e2e8f0;}
-  .ilp-dash-header{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;background:#111827;border-bottom:1px solid rgba(148,163,184,.18);}
-  .ilp-dash-tabs{display:flex;gap:4px;padding:10px 18px 0;background:#111827;overflow-x:auto;}
-  .ilp-tab{background:transparent;border:none;color:#94a3b8;padding:9px 16px;border-radius:10px 10px 0 0;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .ilp-field label{font-size:11px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.04em;}
+  .ilp-field input,.ilp-field select{padding:10px 12px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:13px;outline:none;font-family:inherit;}
+  .ilp-field input:focus{border-color:#2563eb;}
+  .ilp-link{color:#2563eb;cursor:pointer;font-weight:700;text-decoration:underline;font-size:12.5px;}
+  .ilp-user-badge{position:fixed;top:76px;right:14px;z-index:99975;background:rgba(15,23,42,.92);color:#f8fafc;font-size:11.5px;font-weight:600;padding:6px 10px 6px 12px;border-radius:30px;display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.18);box-shadow:0 4px 14px rgba(0,0,0,.28);cursor:pointer;transition:.15s;}
+  .ilp-user-badge:hover{background:rgba(15,23,42,1);}
+  .ilp-user-badge .ilp-dot{width:8px;height:8px;border-radius:50%;background:#f59e0b;box-shadow:0 0 8px currentColor;}
+  .ilp-user-badge .ilp-dot.ok{background:#10b981;box-shadow:0 0 8px #10b981;}
+  .ilp-user-badge .ilp-dot.bad{background:#ef4444;}
+  .ilp-user-badge .ilp-status{font-size:10px;background:rgba(255,255,255,.12);padding:2px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em;}
+  .ilp-user-badge button{background:transparent;border:none;color:#f8fafc;cursor:pointer;font-size:13px;padding:0 4px;}
+  .ilp-fab{position:fixed;bottom:18px;left:18px;z-index:99996;width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#0f172a,#334155);color:#fff;border:1.5px solid rgba(255,255,255,.25);font-size:18px;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.35);}
+  .ilp-fab:hover{transform:scale(1.06);}
+  .ilp-dash{background:#0f172a;width:min(1300px,98vw);height:min(92vh,920px);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;color:#e2e8f0;border:1px solid rgba(148,163,184,.25);box-shadow:0 40px 100px rgba(0,0,0,.55);}
+  .ilp-dash-header{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;background:linear-gradient(135deg,#111827,#1e293b);border-bottom:1px solid rgba(148,163,184,.18);flex-wrap:wrap;gap:10px;}
+  .ilp-dash-header h2{font-size:17px;color:#f8fafc;font-weight:800;margin:0;}
+  .ilp-dash-header .ilp-btn{flex:0 0 auto;min-width:auto;padding:8px 14px;font-size:12px;}
+  .ilp-dash-header .ilp-btn.ghost{background:rgba(255,255,255,.08);color:#e2e8f0;}
+  .ilp-dash-header .ilp-btn.ghost:hover{background:rgba(255,255,255,.16);}
+  .ilp-dash-tabs{display:flex;gap:4px;padding:10px 18px 0;background:#111827;border-bottom:1px solid rgba(148,163,184,.18);overflow-x:auto;}
+  .ilp-tab{background:transparent;border:none;color:#94a3b8;padding:9px 16px;border-radius:10px 10px 0 0;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;}
   .ilp-tab.active{background:#1e293b;color:#fff;box-shadow:inset 0 -3px 0 #2563eb;}
   .ilp-dash-body{flex:1;overflow:auto;padding:16px 18px;background:#0b1220;}
+  .ilp-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+  .ilp-toolbar input,.ilp-toolbar select{background:#1e293b;border:1px solid rgba(148,163,184,.25);border-radius:10px;color:#e2e8f0;padding:8px 12px;font-size:12.5px;outline:none;flex:1;min-width:150px;}
+  .ilp-stats{font-size:11.5px;color:#94a3b8;font-weight:700;margin-left:auto;}
+  .ilp-table-wrap{overflow:auto;border-radius:12px;border:1px solid rgba(148,163,184,.18);}
   .ilp-table{width:100%;border-collapse:collapse;font-size:11.5px;background:#0f172a;}
-  .ilp-table th{background:#1e293b;color:#cbd5e1;padding:9px 8px;text-align:left;font-size:10.5px;text-transform:uppercase;}
-  .ilp-table td{padding:8px 8px;border-top:1px solid rgba(148,163,184,.1);color:#e2e8f0;}
-  .ilp-pill{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:800;text-transform:uppercase;}
+  .ilp-table th{background:#1e293b;color:#cbd5e1;padding:9px 8px;text-align:left;font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0;white-space:nowrap;}
+  .ilp-table td{padding:8px 8px;border-top:1px solid rgba(148,163,184,.1);color:#e2e8f0;white-space:nowrap;}
+  .ilp-table tr:hover td{background:rgba(37,99,235,.08);}
+  .ilp-pill{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:800;text-transform:uppercase;display:inline-block;white-space:nowrap;}
   .ilp-pill.pending_payment{background:#fef3c7;color:#92400e;}
   .ilp-pill.pending_approval{background:#dbeafe;color:#1e40af;}
   .ilp-pill.approved{background:#d1fae5;color:#065f46;}
   .ilp-pill.rejected{background:#fee2e2;color:#991b1b;}
   .ilp-pill.suspended{background:#f3e8ff;color:#6b21a8;}
-  .ilp-act-btn{padding:4px 8px;border-radius:6px;border:none;font-size:10px;font-weight:800;cursor:pointer;margin:1px;}
+  .ilp-pill.expired{background:#fecaca;color:#7f1d1d;}
+  .ilp-pill.expiring{background:#fed7aa;color:#9a3412;}
+  .ilp-act-btn{padding:4px 8px;border-radius:6px;border:none;font-size:10px;font-weight:800;cursor:pointer;margin:1px 2px 1px 0;}
   .ilp-act-approve{background:#10b981;color:#fff;}
   .ilp-act-reject{background:#f59e0b;color:#fff;}
+  .ilp-act-suspend{background:#a855f7;color:#fff;}
+  .ilp-act-extend{background:#06b6d4;color:#fff;}
+  .ilp-act-reset{background:#64748b;color:#fff;}
   .ilp-act-delete{background:#ef4444;color:#fff;}
-  .ilp-info-box{background:#f1f5f9;border-radius:14px;padding:12px 16px;display:flex;flex-direction:column;gap:6px;font-size:13px;margin:10px 0;}
-  .ilp-info-box div{display:flex;justify-content:space-between;}
-  .ilp-note{font-size:12px;color:#64748b;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:9px 12px;margin-top:6px;}
+  .ilp-act-view{background:#3b82f6;color:#fff;}
+  .ilp-settings{max-width:560px;}
+  .ilp-settings .ilp-field label{color:#94a3b8;}
+  .ilp-settings .ilp-field input{background:#1e293b;color:#e2e8f0;border-color:rgba(148,163,184,.25);}
+  .ilp-code{background:#020617;color:#a5f3fc;padding:14px;border-radius:12px;font-size:11px;line-height:1.5;overflow:auto;max-height:55vh;border:1px solid rgba(148,163,184,.2);white-space:pre;font-family:ui-monospace,monospace;}
+  .ilp-stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;}
+  .ilp-stat-tile{background:linear-gradient(135deg,#eff6ff,#e0e7ff);border:1px solid #c7d2fe;border-radius:12px;padding:10px 6px;text-align:center;}
+  .ilp-stat-tile span{display:block;font-size:10px;color:#4338ca;font-weight:800;text-transform:uppercase;letter-spacing:.03em;line-height:1.2;}
+  .ilp-stat-tile b{display:block;font-size:20px;color:#1e3a8a;font-weight:800;margin-top:4px;}
+  .ilp-plan-hero{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border-radius:16px;padding:16px 18px;margin:10px 0;}
+  .ilp-plan-hero .lbl{font-size:11px;font-weight:800;text-transform:uppercase;opacity:.85;letter-spacing:.05em;}
+  .ilp-plan-hero .val{font-size:22px;font-weight:900;margin-top:2px;}
+  .ilp-plan-hero .sub{font-size:12px;opacity:.9;margin-top:4px;}
+  .ilp-warn{background:#fef3c7;border:1px solid #fde68a;color:#78350f;padding:10px 14px;border-radius:12px;font-size:12.5px;font-weight:700;margin-top:10px;line-height:1.5;}
+  @media (max-width:640px){
+    .ilp-modal{max-width:96vw;padding:20px;}
+    .ilp-user-badge{top:auto;bottom:70px;right:10px;font-size:10.5px;}
+    .ilp-fab{bottom:14px;left:10px;}
+    .ilp-stats-grid{grid-template-columns:1fr 1fr;}
+  }
   @media print{.ilp-overlay,.ilp-fab,.ilp-user-badge{display:none!important;}}
 </style>
 
+<!-- Current user status badge (clickable → opens user dashboard) -->
 <div id="ilpUserBadge" class="ilp-user-badge no-print" style="display:none;" onclick="ILP_AUTH.openUserDash()">
   <span class="ilp-dot" id="ilpUserDot"></span>
   <span id="ilpUserName">User</span>
-  <span id="ilpUserStatus" style="font-size:10px;background:rgba(255,255,255,.12);padding:2px 7px;border-radius:20px;">pending</span>
+  <span class="ilp-status" id="ilpUserStatus">pending</span>
+  <button onclick="event.stopPropagation();ILP_AUTH.logout()" title="Logout">⎋</button>
 </div>
 
+<!-- Registration Modal (Login link) -->
 <div id="ilpRegModal" class="ilp-overlay no-print" style="display:none;">
-  <div class="ilp-modal">
+  <div class="ilp-modal" style="position:relative;">
+    <button type="button"
+            onclick="ILP_AUTH.hideAll()"
+            title="Close"
+            style="position:absolute;top:12px;right:12px;width:34px;height:34px;
+                   border-radius:50%;background:#fee2e2;color:#dc2626;border:none;
+                   font-size:16px;font-weight:900;cursor:pointer;line-height:1;
+                   display:flex;align-items:center;justify-content:center;
+                   transition:transform .15s;"
+            onmouseover="this.style.transform='scale(1.1)'"
+            onmouseout="this.style.transform='scale(1)'">✕</button>
     <h2>✨ Create Your Account</h2>
-    <p>Register to use iLovePrint Studio. Cross-device sync enabled.</p>
+    <p style="font-size:12.5px;">Register to use iLovePrint Studio. After registration you'll need to pay the activation fee.</p>
     <div class="ilp-field"><label>Your Name *</label><input id="ilpRegName" type="text" placeholder="Full Name"></div>
     <div class="ilp-field"><label>Shop / Business Name *</label><input id="ilpRegShop" type="text" placeholder="Shop name"></div>
     <div class="ilp-field"><label>Mobile Number (10-digit) *</label><input id="ilpRegMobile" type="tel" maxlength="10" placeholder="10-digit mobile"></div>
     <div class="ilp-field"><label>Address / City *</label><input id="ilpRegAddr" type="text" placeholder="City, State"></div>
-    <div class="ilp-note">ℹ️ Your mobile number will be your <b>User ID</b> and default <b>Password</b>.</div>
+    <div class="ilp-note">ℹ️ Your mobile number will be your <b>User ID</b> and default <b>Password</b>. You can change the password after login.</div>
     <div class="ilp-btn-row">
       <button class="ilp-btn ghost" onclick="ILP_AUTH.showLogin()">Already registered? Login</button>
       <button class="ilp-btn primary" onclick="ILP_AUTH.submitRegistration()">Register →</button>
@@ -4681,9 +4831,11 @@
   </div>
 </div>
 
+<!-- Login Modal -->
 <div id="ilpLoginModal" class="ilp-overlay no-print" style="display:none;">
   <div class="ilp-modal" style="max-width:400px;">
     <h2>🔑 Login</h2>
+    <p style="font-size:12.5px;">Enter your mobile number and password.</p>
     <div class="ilp-field"><label>Mobile Number (User ID)</label><input id="ilpLoginMobile" type="tel" maxlength="10"></div>
     <div class="ilp-field"><label>Password</label><input id="ilpLoginPass" type="password"></div>
     <div class="ilp-btn-row">
@@ -4693,14 +4845,19 @@
   </div>
 </div>
 
+<!-- Payment / Recharge Modal -->
 <div id="ilpPayModal" class="ilp-overlay no-print" style="display:none;">
   <div class="ilp-modal">
     <h2 id="ilpPayTitle">💳 Complete Payment</h2>
     <p id="ilpPaySubtitle">To activate your account, pay the amount using UPI QR below.</p>
     <div class="ilp-qr-wrap">
       <img id="ilpQrImg" alt="UPI QR Code">
+      <div class="ilp-upi-id">UPI ID: <b id="ilpUpiTxt">-</b>
+        <button class="ilp-act-btn ilp-act-view" style="margin-left:6px;" onclick="ILP_AUTH.copyUpi()">Copy</button>
+      </div>
       <div style="margin-top:8px;font-size:20px;font-weight:900;color:#1d4ed8;" id="ilpPayAmountBig">₹50</div>
     </div>
+    <div class="ilp-note">After payment, click <b>"I have paid"</b>. Your account will be approved by admin shortly.</div>
     <div class="ilp-btn-row">
       <button class="ilp-btn ghost" onclick="ILP_AUTH.hideAll()">Back</button>
       <button class="ilp-btn primary" onclick="ILP_AUTH.markPaid()">✓ I have paid</button>
@@ -4708,21 +4865,34 @@
   </div>
 </div>
 
+<!-- Pending Approval Modal -->
 <div id="ilpPendingModal" class="ilp-overlay no-print" style="display:none;">
   <div class="ilp-modal">
     <h2>⏳ Awaiting Admin Approval</h2>
     <p>Your payment is received. Please wait while admin verifies and approves your account.</p>
+    <div class="ilp-info-box">
+      <div><span>Name</span><b id="ilpPendName">-</b></div>
+      <div><span>Mobile (ID)</span><b id="ilpPendMobile">-</b></div>
+      <div><span>Shop</span><b id="ilpPendShop">-</b></div>
+      <div><span>Status</span><b id="ilpPendStatus">-</b></div>
+    </div>
     <div class="ilp-btn-row">
       <button class="ilp-btn ghost" onclick="ILP_AUTH.logout()">Logout</button>
+      <button class="ilp-btn ghost" onclick="ILP_AUTH.showPaymentModal()">Show QR</button>
       <button class="ilp-btn primary" onclick="ILP_AUTH.checkStatus()">🔄 Check Status</button>
     </div>
   </div>
 </div>
 
+<!-- Plan Expired Modal -->
 <div id="ilpExpiredModal" class="ilp-overlay no-print" style="display:none;">
   <div class="ilp-modal">
     <h2>⏰ Plan Expired</h2>
-    <p>Your monthly plan has expired. Please recharge to continue.</p>
+    <p>Your monthly plan has expired. Please recharge to continue using iLovePrint Studio tools.</p>
+    <div class="ilp-info-box">
+      <div><span>Last Recharge</span><b id="ilpExpRecharge">-</b></div>
+      <div><span>Expired On</span><b id="ilpExpDate">-</b></div>
+    </div>
     <div class="ilp-btn-row">
       <button class="ilp-btn ghost" onclick="ILP_AUTH.logout()">Logout</button>
       <button class="ilp-btn primary" onclick="ILP_AUTH.showRechargeModal()">🔄 Recharge Now</button>
@@ -4730,27 +4900,58 @@
   </div>
 </div>
 
+<!-- User Dashboard Modal -->
 <div id="ilpUserDash" class="ilp-overlay no-print" style="display:none;">
   <div class="ilp-modal" style="max-width:540px;">
     <h2>👤 My Account</h2>
+
+    <div class="ilp-plan-hero">
+      <div class="lbl">📅 Current Plan</div>
+      <div class="val" id="ilpUDPlanVal">Monthly · 30 Days</div>
+      <div class="sub" id="ilpUDPlanSub">Active</div>
+    </div>
+
+    <h3>Account Info</h3>
     <div class="ilp-info-box">
       <div><span>Name</span><b id="ilpUDName">-</b></div>
       <div><span>Mobile (ID)</span><b id="ilpUDMobile">-</b></div>
       <div><span>Shop</span><b id="ilpUDShop">-</b></div>
-      <div><span>Status</span><b id="ilpUDStatus">-</b></div>
-      <div><span>Expiry Date</span><b id="ilpUDExpiry">-</b></div>
+      <div><span>Address</span><b id="ilpUDAddress">-</b></div>
     </div>
+
+    <h3>Recharge &amp; Validity</h3>
+    <div class="ilp-info-box">
+      <div><span>Registered On</span><b id="ilpUDRegDate">-</b></div>
+      <div><span>Last Recharge</span><b id="ilpUDRechargeDate">-</b></div>
+      <div><span>Expiry Date</span><b id="ilpUDExpiryDate">-</b></div>
+      <div><span>Days Left</span><b id="ilpUDDaysLeft">-</b></div>
+      <div><span>Amount Paid</span><b id="ilpUDAmount">-</b></div>
+    </div>
+
+    <h3>📊 My Usage Stats</h3>
+    <div class="ilp-stats-grid">
+      <div class="ilp-stat-tile"><span>ID Cards</span><b id="ilpUDCards">0</b></div>
+      <div class="ilp-stat-tile"><span>Passport Photos</span><b id="ilpUDPhotos">0</b></div>
+      <div class="ilp-stat-tile"><span>AutoCropper Prints</span><b id="ilpUDCropper">0</b></div>
+      <div class="ilp-stat-tile"><span>BG Removals</span><b id="ilpUDBg">0</b></div>
+      <div class="ilp-stat-tile"><span>Enhancements</span><b id="ilpUDEnhance">0</b></div>
+      <div class="ilp-stat-tile"><span>Total Outputs</span><b id="ilpUDTotal">0</b></div>
+    </div>
+
+    <div id="ilpUDWarnBox" class="ilp-warn" style="display:none;"></div>
+
     <div class="ilp-btn-row">
       <button class="ilp-btn ghost" onclick="ILP_AUTH.closeUserDash()">Close</button>
-      <button class="ilp-btn primary" onclick="ILP_AUTH.showRechargeModal()">🔄 Recharge</button>
+      <button class="ilp-btn primary" onclick="ILP_AUTH.showRechargeModal()">🔄 Recharge / Extend</button>
     </div>
   </div>
 </div>
 
+<!-- Admin Login Modal -->
 <div id="ilpAdminLoginModal" class="ilp-overlay no-print" style="display:none;">
   <div class="ilp-modal" style="max-width:400px;">
     <h2>🔐 Admin Login</h2>
-    <div class="ilp-field"><label>Username</label><input id="ilpAdminUser" type="text"></div>
+    <div class="ilp-field"><label>Username</label><input id="ilpAdminUser" type="text" autocomplete="off"></div>
     <div class="ilp-field"><label>Password</label><input id="ilpAdminPass" type="password"></div>
     <div class="ilp-btn-row">
       <button class="ilp-btn ghost" onclick="ILP_AUTH.closeAdminLogin()">Cancel</button>
@@ -4759,40 +4960,1492 @@
   </div>
 </div>
 
+<!-- Admin Dashboard -->
 <div id="ilpAdminDash" class="ilp-overlay no-print" style="display:none;">
   <div class="ilp-dash">
     <div class="ilp-dash-header">
       <h2>🛡️ iLovePrint · Admin Dashboard</h2>
-      <div style="display:flex;gap:8px;">
-        <button class="ilp-btn ghost" onclick="ILP_ADMIN.refreshFromSheet()">🔄 Sync from Cloud</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="ilp-btn ghost" onclick="ILP_ADMIN.refreshFromSheet()">🔄 Sync from Sheet</button>
+        <button class="ilp-btn ghost" onclick="ILP_ADMIN.exportUsers()">⬇ Export CSV</button>
         <button class="ilp-btn danger" onclick="ILP_AUTH.adminLogout()">Logout</button>
       </div>
     </div>
     <div class="ilp-dash-tabs">
       <button class="ilp-tab active" data-tab="users">👥 Users</button>
+      <button class="ilp-tab" data-tab="activity">📊 Activity Log</button>
       <button class="ilp-tab" data-tab="settings">⚙️ Settings</button>
+      <button class="ilp-tab" data-tab="apps">📜 Google Apps Script</button>
     </div>
     <div class="ilp-dash-body">
       <div class="ilp-tab-panel" data-panel="users">
+        <div class="ilp-toolbar">
+          <input id="ilpSearchUsers" placeholder="🔍 Search name / mobile / shop / address..." oninput="ILP_ADMIN.renderUsers()">
+          <select id="ilpFilterStatus" onchange="ILP_ADMIN.renderUsers()">
+            <option value="">All Status</option>
+            <option value="pending_payment">Pending Payment</option>
+            <option value="pending_approval">Pending Approval</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="suspended">Suspended</option>
+          </select>
+          <span id="ilpStats" class="ilp-stats"></span>
+        </div>
         <div class="ilp-table-wrap">
           <table class="ilp-table" id="ilpUsersTable">
-            <thead><tr><th>#</th><th>Name</th><th>Mobile</th><th>Shop</th><th>Status</th><th>Expiry</th><th>Actions</th></tr></thead>
+            <thead>
+              <tr>
+                <th>#</th><th>Name</th><th>Mobile</th><th>Shop</th>
+                <th>Status</th><th>Reg. Date</th><th>Recharge</th><th>Expiry</th><th>Days</th>
+                <th>🪪 Cards</th><th>📸 Photos</th><th>📐 Cropper</th><th>✨ BG</th><th>⚡ Enh.</th><th>Σ Total</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
             <tbody></tbody>
           </table>
         </div>
       </div>
-      <div class="ilp-tab-panel" data-panel="settings" style="display:none;">
-        <div style="max-width:500px;">
-          <div class="ilp-field"><label>Google Apps Script URL</label><input id="ilpSetSheetUrl" type="text" placeholder="https://script.google.com/macros/s/.../exec"></div>
-          <div class="ilp-field"><label>Admin Key</label><input id="ilpSetAdminKey" type="text" placeholder="ILP-XXXXXXXX"></div>
-          <div class="ilp-field"><label>Registration Amount (₹)</label><input id="ilpSetAmount" type="number" value="50"></div>
-          <div class="ilp-field"><label>Plan Duration (days)</label><input id="ilpSetPlanDays" type="number" value="30"></div>
-          <button class="ilp-btn primary" onclick="ILP_ADMIN.saveSettings()" style="margin-top:10px;">💾 Save Settings</button>
+      <div class="ilp-tab-panel" data-panel="activity" style="display:none;">
+        <div class="ilp-toolbar">
+          <input id="ilpSearchLog" placeholder="🔍 Search activity..." oninput="ILP_ADMIN.renderLog()">
+          <button class="ilp-btn ghost" onclick="ILP_ADMIN.clearLog()">🗑 Clear Local Log</button>
         </div>
+        <div class="ilp-table-wrap">
+          <table class="ilp-table">
+            <thead><tr><th>Time</th><th>User</th><th>Mobile</th><th>Action</th><th>Detail</th></tr></thead>
+            <tbody id="ilpLogBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="ilp-tab-panel" data-panel="settings" style="display:none;">
+        <div class="ilp-settings">
+          <div class="ilp-field"><label>Registration / Recharge Amount (₹) — <i>changeable anytime</i></label><input type="number" id="ilpSetAmount" min="0" step="1"></div>
+          <div class="ilp-field"><label>Plan Duration (days)</label><input type="number" id="ilpSetPlanDays" min="1" step="1" value="30"></div>
+          <div class="ilp-field"><label>UPI ID</label><input type="text" id="ilpSetUpi"></div>
+          <div class="ilp-field"><label>UPI Payee Name</label><input type="text" id="ilpSetPayee"></div>
+          <div class="ilp-field"><label>Custom QR Image URL (optional)</label><input type="text" id="ilpSetQrUrl" placeholder="Leave blank for auto-generated UPI QR"></div>
+          <div class="ilp-field"><label>Google Apps Script URL</label><input type="text" id="ilpSetSheetUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
+          <div class="ilp-btn-row">
+            <button class="ilp-btn primary" onclick="ILP_ADMIN.saveSettings()">💾 Save Settings</button>
+            <button class="ilp-btn ghost" onclick="ILP_ADMIN.testSheet()">🧪 Test Sheet</button>
+          </div>
+          <p style="font-size:12px;color:#94a3b8;margin-top:12px;line-height:1.6;">
+            Changing the amount here affects <b>future</b> payments and new signups instantly. Existing approved plans keep their expiry until renewed.
+          </p>
+        </div>
+      </div>
+      <div class="ilp-tab-panel" data-panel="apps" style="display:none;">
+        <p style="font-size:12.5px;color:#cbd5e1;margin-bottom:10px;">Open your Google Sheet → <b>Extensions → Apps Script</b>, paste the code below → <b>Deploy → New deployment → Web app</b> with <b>Execute as: Me</b>, <b>Access: Anyone</b>. Copy URL into Settings tab.</p>
+        <pre id="ilpAppsScriptCode" class="ilp-code"></pre>
+        <div style="margin-top:10px;"><button class="ilp-btn primary" onclick="ILP_ADMIN.copyAppsScript()">📋 Copy Apps Script Code</button></div>
       </div>
     </div>
   </div>
 </div>
+
+<button id="ilpAdminFab" class="ilp-fab no-print" onclick="ILP_AUTH.openAdminLogin()" title="Admin (Ctrl+Shift+A)">🛡️</button>
+
+<script>
+/* ================================================================
+   iLovePrint ADD-ON v2 — Auth · Monthly Plan · Stats · Admin
+   Fully additive. Original code untouched.
+   Secrets are loaded from window.ILP_SECRET (security patch above).
+   ================================================================ */
+(function () {
+  'use strict';
+
+  /* ---------- CONFIG ---------- */
+  const DEFAULTS = {
+    amount: 50,
+    planDays: 30,
+    upiId: (window.ILP_SECRET && ILP_SECRET.upi) ? ILP_SECRET.upi() : '',
+    payee: 'iLovePrint',
+    qrUrl: '',
+    sheetUrl: ''
+  };
+  /* Admin username pulled from obfuscated secret.
+     Admin password is never stored in plaintext — only its SHA-256 hash. */
+  const ADMIN_USER = (window.ILP_SECRET && ILP_SECRET.user) ? ILP_SECRET.user() : '\x00';
+  const K = {
+    ACC: 'iloveprint_account',
+    USERS: 'iloveprint_users_db',
+    LOG: 'iloveprint_activity_log',
+    SET: 'iloveprint_settings_v2',
+    ADMIN: 'iloveprint_admin_session'
+  };
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  /* ---------- Storage ---------- */
+  const LS = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+  const gEl = id => document.getElementById(id);
+  const ilpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  const ILPSettings = {
+    get() { return Object.assign({}, DEFAULTS, LS.get(K.SET, {})); },
+    save(patch) { LS.set(K.SET, Object.assign(this.get(), patch)); },
+    sheetUrl() {
+      const s = this.get();
+      if (s.sheetUrl) return s.sheetUrl;
+      try {
+        if (typeof GOOGLE_SHEET_API_URL !== 'undefined' && GOOGLE_SHEET_API_URL &&
+            !GOOGLE_SHEET_API_URL.includes('REPLACE_WITH_YOUR')) return GOOGLE_SHEET_API_URL;
+      } catch (e) {}
+      return '';
+    }
+  };
+
+  /* ---------- Sheet sync helper ---------- */
+  function postToSheet(payload) {
+    const url = ILPSettings.sheetUrl();
+    if (!url) return;
+    try {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(url, new Blob([JSON.stringify(payload)], { type: 'text/plain;charset=utf-8' }));
+      } else {
+        fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) }).catch(function(){});
+      }
+    } catch (e) {}
+  }
+
+  /* ---------- Activity log ---------- */
+  function addLog(type, detail) {
+    const acc = LS.get(K.ACC, null);
+    const log = LS.get(K.LOG, []);
+    log.unshift({ ts: Date.now(), user: acc ? (acc.name || 'User') : 'Guest', mobile: acc ? acc.mobile : '-', type: type, detail: detail || '' });
+    if (log.length > 800) log.length = 800;
+    LS.set(K.LOG, log);
+    postToSheet({ action: 'log_activity', mobile: acc ? acc.mobile : 'guest', name: acc ? acc.name : 'Guest', service: type, detail: detail || '', ts: new Date().toISOString() });
+  }
+
+  /* ---------- Stats helpers ---------- */
+  function emptyStats() { return { idCards: 0, passportPhotos: 0, cropperPrints: 0, bgRemovals: 0, enhancements: 0 }; }
+  function totalStats(s) { s = s || emptyStats(); return (s.idCards||0) + (s.passportPhotos||0) + (s.cropperPrints||0) + (s.bgRemovals||0) + (s.enhancements||0); }
+  function incrementStat(key, n) {
+    const acc = LS.get(K.ACC, null);
+    if (!acc) return;
+    if (!acc.stats) acc.stats = emptyStats();
+    acc.stats[key] = (acc.stats[key] || 0) + (n || 1);
+    acc.stats.lastActivityAt = Date.now();
+    LS.set(K.ACC, acc);
+    Users.upsert(acc);
+    postToSheet({ action: 'increment_stat', mobile: acc.mobile, statKey: key, statValue: acc.stats[key], stats: acc.stats });
+  }
+
+  /* ---------- Plan helpers ---------- */
+  function getPlanInfo(acc) {
+    const s = ILPSettings.get();
+    const planDays = s.planDays || 30;
+    const rechargeDate = acc.rechargeDate || acc.approvedAt || null;
+    const expiryDate = acc.expiryDate || (rechargeDate ? rechargeDate + planDays * DAY_MS : null);
+    const now = Date.now();
+    let daysLeft = 0, expired = false, expiringSoon = false;
+    if (expiryDate) {
+      daysLeft = Math.ceil((expiryDate - now) / DAY_MS);
+      expired = now > expiryDate;
+      expiringSoon = !expired && daysLeft <= 5;
+    }
+    return { rechargeDate, expiryDate, daysLeft, expired, expiringSoon, planDays };
+  }
+
+  /* ---------- Users DB ---------- */
+  const Users = {
+    all() { return LS.get(K.USERS, []); },
+    save(list) { LS.set(K.USERS, list); },
+    upsert(u) {
+      const list = this.all();
+      const i = list.findIndex(x => x.mobile === u.mobile);
+      if (i >= 0) list[i] = Object.assign({}, list[i], u);
+      else list.push(u);
+      this.save(list);
+    },
+    find(mobile) { return this.all().find(x => x.mobile === mobile) || null; },
+    remove(mobile) { this.save(this.all().filter(x => x.mobile !== mobile)); },
+    setStatus(mobile, status) {
+      const list = this.all();
+      const i = list.findIndex(x => x.mobile === mobile);
+      if (i >= 0) {
+        list[i].status = status;
+        if (status === 'approved') {
+          const s = ILPSettings.get();
+          list[i].rechargeDate = Date.now();
+          list[i].expiryDate = Date.now() + (s.planDays || 30) * DAY_MS;
+          list[i].approvedAt = Date.now();
+        }
+        this.save(list);
+      }
+      const acc = LS.get(K.ACC, null);
+      if (acc && acc.mobile === mobile) {
+        acc.status = status;
+        if (status === 'approved') {
+          const s = ILPSettings.get();
+          acc.rechargeDate = Date.now();
+          acc.expiryDate = Date.now() + (s.planDays || 30) * DAY_MS;
+          acc.approvedAt = Date.now();
+        }
+        LS.set(K.ACC, acc);
+      }
+      postToSheet({ action: 'update_status', mobile: mobile, status: status });
+    },
+    extend(mobile, days) {
+      const list = this.all();
+      const i = list.findIndex(x => x.mobile === mobile);
+      const s = ILPSettings.get();
+      const add = (days || s.planDays || 30) * DAY_MS;
+      if (i >= 0) {
+        const base = Math.max(Date.now(), list[i].expiryDate || Date.now());
+        list[i].expiryDate = base + add;
+        list[i].rechargeDate = Date.now();
+        if (list[i].status !== 'approved') list[i].status = 'approved';
+        this.save(list);
+      }
+      const acc = LS.get(K.ACC, null);
+      if (acc && acc.mobile === mobile) {
+        const base = Math.max(Date.now(), acc.expiryDate || Date.now());
+        acc.expiryDate = base + add;
+        acc.rechargeDate = Date.now();
+        if (acc.status !== 'approved') acc.status = 'approved';
+        LS.set(K.ACC, acc);
+      }
+      postToSheet({ action: 'extend_plan', mobile: mobile, days: days || s.planDays || 30 });
+    },
+    resetStats(mobile) {
+      const list = this.all();
+      const i = list.findIndex(x => x.mobile === mobile);
+      if (i >= 0) { list[i].stats = emptyStats(); this.save(list); }
+      const acc = LS.get(K.ACC, null);
+      if (acc && acc.mobile === mobile) { acc.stats = emptyStats(); LS.set(K.ACC, acc); }
+      postToSheet({ action: 'reset_stats', mobile: mobile });
+    }
+  };
+
+  /* ---------- UPI / QR ---------- */
+  function buildUpiUrl() {
+    const s = ILPSettings.get();
+    const p = new URLSearchParams();
+    p.set('pa', s.upiId);
+    p.set('pn', s.payee || 'iLovePrint');
+    p.set('am', String(s.amount));
+    p.set('cu', 'INR');
+    p.set('tn', 'iLovePrint Plan');
+    return 'upi://pay?' + p.toString();
+  }
+  function buildQrSrc() {
+    const s = ILPSettings.get();
+    if (s.qrUrl) return s.qrUrl;
+    return 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=10&data=' + encodeURIComponent(buildUpiUrl());
+  }
+
+  /* ---------- UI helpers ---------- */
+  function show(id) { const e = gEl(id); if (e) e.style.display = 'flex'; }
+  function hide(id) { const e = gEl(id); if (e) e.style.display = 'none'; }
+  function hideAllAuthModals() { ['ilpPayModal','ilpPendingModal','ilpExpiredModal','ilpUserDash','ilpLoginModal','ilpRegModal'].forEach(hide); }
+  function fmtDate(ts) { if (!ts) return '-'; return new Date(ts).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
+  function fmtDateTime(ts) { if (!ts) return '-'; return new Date(ts).toLocaleString('en-IN'); }
+
+  /* ---------- Badge ---------- */
+  function refreshBadge() {
+    const acc = LS.get(K.ACC, null);
+    const badge = gEl('ilpUserBadge');
+    if (!acc) { badge.style.display = 'none'; return; }
+    badge.style.display = 'flex';
+    gEl('ilpUserName').textContent = acc.name || 'User';
+    let displayStatus = acc.status || 'pending';
+    if (acc.status === 'approved') {
+      const plan = getPlanInfo(acc);
+      if (plan.expired) displayStatus = 'expired';
+      else if (plan.expiringSoon) displayStatus = 'expiring';
+    }
+    gEl('ilpUserStatus').textContent = displayStatus.replace('_', ' ');
+    const dot = gEl('ilpUserDot');
+    dot.className = 'ilp-dot' + (acc.status === 'approved' ? (getPlanInfo(acc).expired ? ' bad' : ' ok') : (acc.status === 'rejected' || acc.status === 'suspended' ? ' bad' : ''));
+  }
+
+  /* ============================================================
+     AUTH API
+     ============================================================ */
+  const ILP_AUTH = {
+    getAccount() { return LS.get(K.ACC, null); },
+    isApproved() {
+      const a = LS.get(K.ACC, null);
+      if (!a || a.status !== 'approved') return false;
+      const plan = getPlanInfo(a);
+      return !plan.expired;
+    },
+    hideAll() { hideAllAuthModals(); },
+
+    showRegistration() { hideAllAuthModals(); show('ilpRegModal'); },
+    showLogin() { hideAllAuthModals(); show('ilpLoginModal'); },
+
+    submitRegistration() {
+      const name = gEl('ilpRegName').value.trim();
+      const shop = gEl('ilpRegShop').value.trim();
+      const mobile = gEl('ilpRegMobile').value.trim();
+      const addr = gEl('ilpRegAddr').value.trim();
+      if (!name || !shop || !addr) return alert('Please fill all fields.');
+      if (!/^\d{10}$/.test(mobile)) return alert('Enter a valid 10-digit mobile number.');
+
+      const existing = Users.find(mobile);
+      if (existing && existing.password && existing.password !== mobile) {
+        return alert('This mobile number is already registered. Please use Login instead.');
+      }
+      const s = ILPSettings.get();
+      const account = {
+        name: name, shopName: shop, mobile: mobile, address: addr,
+        password: mobile,
+        status: (existing && existing.status === 'approved') ? 'approved' : (existing && existing.status === 'pending_approval') ? 'pending_approval' : 'pending_payment',
+        amount: s.amount,
+        registeredAt: (existing && existing.registeredAt) || Date.now(),
+        rechargeDate: existing ? existing.rechargeDate : null,
+        expiryDate: existing ? existing.expiryDate : null,
+        stats: (existing && existing.stats) || emptyStats()
+      };
+      LS.set(K.ACC, account);
+      try { LS.set('iloveprint_user_profile', { name: name, shopName: shop, mobile: mobile, address: addr }); } catch (e) {}
+      Users.upsert(account);
+
+      postToSheet({
+        action: 'register_user',
+        name: name, shopName: shop, mobile: mobile, address: addr,
+        password: mobile, status: account.status, amount: account.amount,
+        registeredAt: new Date(account.registeredAt).toISOString(),
+        stats: account.stats
+      });
+      addLog('registration', name + ' / ' + shop + ' / ' + mobile);
+
+      const oldModal = gEl('userRegistrationModal');
+      if (oldModal) oldModal.style.display = 'none';
+
+      refreshBadge();
+
+      if (account.status === 'approved' && account.expiryDate && account.expiryDate > Date.now()) {
+        alert('Welcome back! Your plan is active.');
+        return;
+      }
+      if (account.status === 'pending_approval') return this.showPending();
+      this.showPaymentModal();
+    },
+
+    submitLogin() {
+      const mobile = gEl('ilpLoginMobile').value.trim();
+      const pass = gEl('ilpLoginPass').value;
+      if (!mobile || !pass) return alert('Enter mobile and password.');
+      const u = Users.find(mobile);
+      if (!u) return alert('User not found. Please register.');
+      const expectedPass = u.password || u.mobile;
+      if (pass !== expectedPass) return alert('Incorrect password.');
+
+      const account = Object.assign({}, u, { password: expectedPass, stats: u.stats || emptyStats() });
+      LS.set(K.ACC, account);
+      try { LS.set('iloveprint_user_profile', { name: u.name, shopName: u.shopName, mobile: u.mobile, address: u.address }); } catch (e) {}
+      hideAllAuthModals();
+      refreshBadge();
+      addLog('login', 'User logged in');
+
+      if (account.status === 'approved') {
+        const plan = getPlanInfo(account);
+        if (plan.expired) return this.showExpired();
+        alert('Welcome back, ' + account.name + '!');
+      } else if (account.status === 'pending_approval') {
+        this.showPending();
+      } else if (account.status === 'rejected' || account.status === 'suspended') {
+        alert('Your account status is: ' + account.status + '. Please contact admin.');
+      } else {
+        this.showPaymentModal();
+      }
+    },
+
+    showPaymentModal(isRecharge) {
+      const acc = LS.get(K.ACC, null);
+      if (!acc) return this.showRegistration();
+      hideAllAuthModals();
+      const s = ILPSettings.get();
+      gEl('ilpPayTitle').textContent = isRecharge ? '🔄 Recharge Plan' : '💳 Complete Payment';
+      gEl('ilpPaySubtitle').textContent = isRecharge
+        ? 'Extend your monthly plan by paying the amount below.'
+        : 'To activate your account, pay the amount using UPI QR below.';
+      gEl('ilpPayAmountBig').textContent = '₹' + s.amount;
+      gEl('ilpUpiTxt').textContent = s.upiId;
+      gEl('ilpQrImg').src = buildQrSrc();
+      show('ilpPayModal');
+    },
+
+    showRechargeModal() { this.showPaymentModal(true); },
+
+    copyUpi() {
+      const id = ILPSettings.get().upiId;
+      if (navigator.clipboard) navigator.clipboard.writeText(id).then(() => alert('UPI ID copied: ' + id), () => alert(id));
+      else alert(id);
+    },
+
+    markPaid() {
+      const acc = LS.get(K.ACC, null);
+      if (!acc) return this.showRegistration();
+      acc.status = 'pending_approval';
+      acc.paidAt = Date.now();
+      acc.amount = ILPSettings.get().amount;
+      LS.set(K.ACC, acc);
+      Users.upsert(acc);
+      postToSheet({
+        action: 'register_user',
+        name: acc.name, shopName: acc.shopName, mobile: acc.mobile, address: acc.address,
+        password: acc.password || acc.mobile, status: acc.status, amount: acc.amount,
+        registeredAt: new Date(acc.registeredAt || Date.now()).toISOString(),
+        paidAt: new Date(acc.paidAt).toISOString(),
+        stats: acc.stats || emptyStats()
+      });
+      addLog('payment_marked', 'Paid ₹' + acc.amount);
+      this.showPending();
+    },
+
+    showPending() {
+      const acc = LS.get(K.ACC, null);
+      if (!acc) return this.showRegistration();
+      hideAllAuthModals();
+      gEl('ilpPendName').textContent = acc.name || '-';
+      gEl('ilpPendMobile').textContent = acc.mobile || '-';
+      gEl('ilpPendShop').textContent = acc.shopName || '-';
+      gEl('ilpPendStatus').textContent = (acc.status || 'pending').replace('_', ' ');
+      show('ilpPendingModal');
+      refreshBadge();
+    },
+
+    showExpired() {
+      const acc = LS.get(K.ACC, null);
+      if (!acc) return this.showRegistration();
+      hideAllAuthModals();
+      const plan = getPlanInfo(acc);
+      gEl('ilpExpRecharge').textContent = fmtDate(plan.rechargeDate);
+      gEl('ilpExpDate').textContent = fmtDate(plan.expiryDate);
+      show('ilpExpiredModal');
+    },
+
+    async checkStatus() {
+      const acc = LS.get(K.ACC, null);
+      if (!acc) return this.showRegistration();
+      const url = ILPSettings.sheetUrl();
+      if (url) {
+        try {
+          const r = await fetch(url + (url.includes('?') ? '&' : '?') + 'action=get_user&mobile=' + encodeURIComponent(acc.mobile));
+          const d = await r.json();
+          if (d && d.mobile) {
+            acc.status = d.status || acc.status;
+            if (d.rechargeDate) acc.rechargeDate = Date.parse(d.rechargeDate) || acc.rechargeDate;
+            if (d.expiryDate) acc.expiryDate = Date.parse(d.expiryDate) || acc.expiryDate;
+            LS.set(K.ACC, acc);
+            Users.upsert(acc);
+          }
+        } catch (e) {}
+      }
+      const fresh = LS.get(K.ACC, null);
+      refreshBadge();
+      if (fresh && fresh.status === 'approved') {
+        const plan = getPlanInfo(fresh);
+        if (plan.expired) return this.showExpired();
+        hideAllAuthModals();
+        alert('🎉 Approved! Plan active until ' + fmtDate(plan.expiryDate) + '.');
+      } else if (fresh && (fresh.status === 'rejected' || fresh.status === 'suspended')) {
+        alert('Status: ' + fresh.status + '. Contact admin.');
+      } else {
+        alert('Still pending approval.');
+      }
+    },
+
+    logout() {
+      if (!confirm('Logout from this device?')) return;
+      addLog('logout', '');
+      LS.del(K.ACC);
+      hideAllAuthModals();
+      refreshBadge();
+      try { window.switchSuiteSection('landing'); } catch (e) {}
+    },
+
+    /* ---------- User Dashboard ---------- */
+    openUserDash() {
+      const acc = LS.get(K.ACC, null);
+      if (!acc) return this.showRegistration();
+      hideAllAuthModals();
+      const plan = getPlanInfo(acc);
+      const s = acc.stats || emptyStats();
+      const sCfg = ILPSettings.get();
+
+      gEl('ilpUDName').textContent = acc.name || '-';
+      gEl('ilpUDMobile').textContent = acc.mobile || '-';
+      gEl('ilpUDShop').textContent = acc.shopName || '-';
+      gEl('ilpUDAddress').textContent = acc.address || '-';
+
+      gEl('ilpUDPlanVal').textContent = 'Monthly · ' + (sCfg.planDays || 30) + ' Days';
+      let sub = 'Active';
+      if (plan.expired) sub = '⚠️ Expired';
+      else if (plan.expiringSoon) sub = '⚠️ Expiring in ' + plan.daysLeft + ' day(s)';
+      else if (plan.daysLeft > 0) sub = 'Active · ' + plan.daysLeft + ' day(s) left';
+      else sub = 'Awaiting activation';
+      gEl('ilpUDPlanSub').textContent = sub;
+
+      gEl('ilpUDRegDate').textContent = fmtDate(acc.registeredAt);
+      gEl('ilpUDRechargeDate').textContent = fmtDate(plan.rechargeDate);
+      gEl('ilpUDExpiryDate').textContent = fmtDate(plan.expiryDate);
+      gEl('ilpUDDaysLeft').textContent = plan.expiryDate ? (plan.expired ? 'Expired' : plan.daysLeft + ' days') : '-';
+      gEl('ilpUDAmount').textContent = '₹' + (acc.amount || sCfg.amount);
+
+      gEl('ilpUDCards').textContent = s.idCards || 0;
+      gEl('ilpUDPhotos').textContent = s.passportPhotos || 0;
+      gEl('ilpUDCropper').textContent = s.cropperPrints || 0;
+      gEl('ilpUDBg').textContent = s.bgRemovals || 0;
+      gEl('ilpUDEnhance').textContent = s.enhancements || 0;
+      gEl('ilpUDTotal').textContent = totalStats(s);
+
+      const warnBox = gEl('ilpUDWarnBox');
+      if (plan.expired) {
+        warnBox.style.display = 'block';
+        warnBox.innerHTML = '⚠️ Your plan expired on <b>' + fmtDate(plan.expiryDate) + '</b>. Click <b>Recharge / Extend</b> to continue.';
+      } else if (plan.expiringSoon) {
+        warnBox.style.display = 'block';
+        warnBox.innerHTML = '⏳ Your plan expires on <b>' + fmtDate(plan.expiryDate) + '</b> (' + plan.daysLeft + ' days left). Recharge early to avoid interruption.';
+      } else {
+        warnBox.style.display = 'none';
+      }
+      show('ilpUserDash');
+    },
+    closeUserDash() { hide('ilpUserDash'); },
+
+    /* ---------- Admin ---------- */
+    openAdminLogin() {
+      gEl('ilpAdminUser').value = '';
+      gEl('ilpAdminPass').value = '';
+      show('ilpAdminLoginModal');
+      setTimeout(() => gEl('ilpAdminUser').focus(), 80);
+    },
+    closeAdminLogin() { hide('ilpAdminLoginModal'); },
+
+    /* Hash-based admin login (password never in plaintext) */
+    async adminLogin() {
+      const u = gEl('ilpAdminUser').value.trim();
+      const p = gEl('ilpAdminPass').value;
+      if (!window.ILP_SECRET || typeof ILP_SECRET.hash !== 'function') {
+        alert('❌ Security module not loaded.'); return;
+      }
+      let stored = ILP_SECRET.passHash();
+      if (!stored) {
+        await new Promise(r => setTimeout(r, 300));
+        stored = ILP_SECRET.passHash();
+      }
+      const inputHash = await ILP_SECRET.hash(p);
+      if (u === ADMIN_USER && stored && inputHash === stored) {
+        sessionStorage.setItem(K.ADMIN, '1');
+        hide('ilpAdminLoginModal');
+        ILP_ADMIN.open();
+        addLog('admin_login', 'Admin logged in');
+      } else {
+        await new Promise(r => setTimeout(r, 700));
+        alert('❌ Invalid credentials.');
+      }
+    },
+
+    adminLogout() {
+      sessionStorage.removeItem(K.ADMIN);
+      hide('ilpAdminDash');
+      addLog('admin_logout', '');
+    }
+  };
+
+  /* ============================================================
+     ADMIN DASHBOARD
+     ============================================================ */
+  const ILP_ADMIN = {
+    open() {
+      hideAllAuthModals();
+      show('ilpAdminDash');
+      this.loadSettingsIntoForm();
+      this.renderUsers();
+      this.renderLog();
+      this.renderAppsScript();
+    },
+    loadSettingsIntoForm() {
+      const s = ILPSettings.get();
+      gEl('ilpSetAmount').value = s.amount;
+      gEl('ilpSetPlanDays').value = s.planDays;
+      gEl('ilpSetUpi').value = s.upiId;
+      gEl('ilpSetPayee').value = s.payee || 'iLovePrint';
+      gEl('ilpSetQrUrl').value = s.qrUrl || '';
+      gEl('ilpSetSheetUrl').value = s.sheetUrl || '';
+    },
+    saveSettings() {
+      ILPSettings.save({
+        amount: Math.max(0, parseFloat(gEl('ilpSetAmount').value) || 0),
+        planDays: Math.max(1, parseInt(gEl('ilpSetPlanDays').value, 10) || 30),
+        upiId: gEl('ilpSetUpi').value.trim() || DEFAULTS.upiId,
+        payee: gEl('ilpSetPayee').value.trim() || 'iLovePrint',
+        qrUrl: gEl('ilpSetQrUrl').value.trim(),
+        sheetUrl: gEl('ilpSetSheetUrl').value.trim()
+      });
+      alert('✅ Settings saved.');
+      addLog('admin_settings', 'Amount=' + gEl('ilpSetAmount').value + ', Plan=' + gEl('ilpSetPlanDays').value + 'd');
+    },
+    async testSheet() {
+      const url = ILPSettings.sheetUrl();
+      if (!url) return alert('No Sheet URL configured.');
+      try {
+        const r = await fetch(url + (url.includes('?') ? '&' : '?') + 'action=ping');
+        const t = await r.text();
+        alert('✅ Connection OK\n' + t.slice(0, 200));
+      } catch (e) { alert('❌ Failed: ' + e.message); }
+    },
+    async refreshFromSheet() {
+      const url = ILPSettings.sheetUrl();
+      if (!url) return alert('No Google Sheet URL set. Add it in Settings tab.');
+      try {
+        const r = await fetch(url + (url.includes('?') ? '&' : '?') + 'action=get_users');
+        const data = await r.json();
+        if (!Array.isArray(data)) return alert('Unexpected response. Check Apps Script deployment.');
+        const merged = {};
+        Users.all().forEach(u => merged[u.mobile] = u);
+        data.forEach(row => {
+          const mob = row.mobile;
+          if (!mob) return;
+          const stats = {
+            idCards: +(row.idCards || 0),
+            passportPhotos: +(row.passportPhotos || 0),
+            cropperPrints: +(row.cropperPrints || 0),
+            bgRemovals: +(row.bgRemovals || 0),
+            enhancements: +(row.enhancements || 0)
+          };
+          merged[mob] = Object.assign({}, merged[mob] || {}, {
+            mobile: mob,
+            name: row.name || (merged[mob] || {}).name || '',
+            shopName: row.shopName || (merged[mob] || {}).shopName || '',
+            address: row.address || (merged[mob] || {}).address || '',
+            password: row.password || mob,
+            status: row.status || 'pending_approval',
+            amount: +row.amount || ILPSettings.get().amount,
+            registeredAt: row.registeredAt ? (Date.parse(row.registeredAt) || Date.now()) : Date.now(),
+            rechargeDate: row.rechargeDate ? Date.parse(row.rechargeDate) : null,
+            expiryDate: row.expiryDate ? Date.parse(row.expiryDate) : null,
+            stats: stats
+          });
+        });
+        Users.save(Object.values(merged));
+        this.renderUsers();
+        alert('✅ Synced ' + data.length + ' row(s) from Google Sheet.');
+      } catch (e) { alert('❌ Sync failed: ' + e.message); }
+    },
+    renderUsers() {
+      const q = (gEl('ilpSearchUsers').value || '').toLowerCase().trim();
+      const filter = gEl('ilpFilterStatus').value;
+      let list = Users.all().slice().sort((a, b) => (b.registeredAt || 0) - (a.registeredAt || 0));
+      if (filter) list = list.filter(u => u.status === filter);
+      if (q) list = list.filter(u =>
+        (u.name || '').toLowerCase().includes(q) ||
+        (u.mobile || '').toLowerCase().includes(q) ||
+        (u.shopName || '').toLowerCase().includes(q) ||
+        (u.address || '').toLowerCase().includes(q));
+      const tb = gEl('ilpUsersTable').querySelector('tbody');
+      tb.innerHTML = '';
+      const all = Users.all();
+      const appr = all.filter(u => u.status === 'approved').length;
+      const pend = all.filter(u => u.status === 'pending_approval').length;
+      gEl('ilpStats').textContent = 'Total: ' + all.length + ' · Approved: ' + appr + ' · Pending: ' + pend;
+
+      list.forEach((u, i) => {
+        const plan = getPlanInfo(u);
+        const st = u.stats || emptyStats();
+        let planPillCls = u.status || 'pending_approval';
+        let planPillTxt = (u.status || 'pending_approval').replace('_', ' ');
+        if (u.status === 'approved') {
+          if (plan.expired) { planPillCls = 'expired'; planPillTxt = 'expired'; }
+          else if (plan.expiringSoon) { planPillCls = 'expiring'; planPillTxt = 'expiring'; }
+        }
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td><b>${ilpEsc(u.name)}</b></td>
+          <td>${ilpEsc(u.mobile)}</td>
+          <td>${ilpEsc(u.shopName)}</td>
+          <td><span class="ilp-pill ${planPillCls}">${planPillTxt}</span></td>
+          <td>${fmtDate(u.registeredAt)}</td>
+          <td>${fmtDate(plan.rechargeDate)}</td>
+          <td>${fmtDate(plan.expiryDate)}</td>
+          <td>${plan.expiryDate ? (plan.expired ? '0' : plan.daysLeft) : '-'}</td>
+          <td>${st.idCards || 0}</td>
+          <td>${st.passportPhotos || 0}</td>
+          <td>${st.cropperPrints || 0}</td>
+          <td>${st.bgRemovals || 0}</td>
+          <td>${st.enhancements || 0}</td>
+          <td><b style="color:#38bdf8;">${totalStats(st)}</b></td>
+          <td>
+            ${u.status !== 'approved' ? '<button class="ilp-act-btn ilp-act-approve" onclick="ILP_ADMIN.approve(\'' + u.mobile + '\')">✓ Approve</button>' : ''}
+            ${u.status !== 'rejected' ? '<button class="ilp-act-btn ilp-act-reject" onclick="ILP_ADMIN.reject(\'' + u.mobile + '\')">⨯ Reject</button>' : ''}
+            ${u.status === 'approved' ? '<button class="ilp-act-btn ilp-act-suspend" onclick="ILP_ADMIN.suspend(\'' + u.mobile + '\')">⏸</button>' : ''}
+            <button class="ilp-act-btn ilp-act-extend" onclick="ILP_ADMIN.extend('${u.mobile}')">+30d</button>
+            <button class="ilp-act-btn ilp-act-reset" onclick="ILP_ADMIN.resetStats('${u.mobile}')">↺ Stats</button>
+            <button class="ilp-act-btn ilp-act-view" onclick="ILP_ADMIN.viewUser('${u.mobile}')">👁</button>
+            <button class="ilp-act-btn ilp-act-delete" onclick="ILP_ADMIN.removeUser('${u.mobile}')">🗑</button>
+          </td>`;
+        tb.appendChild(tr);
+      });
+      if (list.length === 0) tb.innerHTML = '<tr><td colspan="16" style="text-align:center;padding:22px;color:#94a3b8;">No users match.</td></tr>';
+    },
+    approve(mobile) { Users.setStatus(mobile, 'approved'); addLog('admin_approve', 'Approved ' + mobile); this.renderUsers(); },
+    reject(mobile) { Users.setStatus(mobile, 'rejected'); addLog('admin_reject', 'Rejected ' + mobile); this.renderUsers(); },
+    suspend(mobile) { Users.setStatus(mobile, 'suspended'); addLog('admin_suspend', 'Suspended ' + mobile); this.renderUsers(); },
+    extend(mobile) {
+      const s = ILPSettings.get();
+      if (!confirm('Extend ' + mobile + "'s plan by " + s.planDays + " days?")) return;
+      Users.extend(mobile, s.planDays);
+      addLog('admin_extend', '+' + s.planDays + 'd for ' + mobile);
+      this.renderUsers();
+    },
+    resetStats(mobile) {
+      if (!confirm('Reset usage stats for ' + mobile + '?')) return;
+      Users.resetStats(mobile);
+      addLog('admin_reset_stats', mobile);
+      this.renderUsers();
+    },
+    removeUser(mobile) {
+      if (!confirm('Delete user ' + mobile + '?')) return;
+      Users.remove(mobile);
+      addLog('admin_delete', mobile);
+      this.renderUsers();
+    },
+    viewUser(mobile) {
+      const u = Users.find(mobile);
+      if (!u) return;
+      const plan = getPlanInfo(u);
+      const st = u.stats || emptyStats();
+      const logs = LS.get(K.LOG, []).filter(l => l.mobile === mobile).slice(0, 15);
+      alert(
+        '═══ USER DETAILS ═══\n' +
+        'Name: ' + (u.name || '-') + '\n' +
+        'Mobile (ID): ' + (u.mobile || '-') + '\n' +
+        'Password: ' + (u.password || u.mobile) + '\n' +
+        'Shop: ' + (u.shopName || '-') + '\n' +
+        'Address: ' + (u.address || '-') + '\n' +
+        'Status: ' + (u.status || '-') + '\n' +
+        '\n═══ PLAN ═══\n' +
+        'Registered: ' + fmtDate(u.registeredAt) + '\n' +
+        'Recharge: ' + fmtDate(plan.rechargeDate) + '\n' +
+        'Expiry: ' + fmtDate(plan.expiryDate) + '\n' +
+        'Days Left: ' + (plan.expired ? 'EXPIRED' : plan.daysLeft) + '\n' +
+        'Amount: ₹' + (u.amount || ILPSettings.get().amount) + '\n' +
+        '\n═══ USAGE ═══\n' +
+        'ID Cards: ' + (st.idCards || 0) + '\n' +
+        'Passport Photos: ' + (st.passportPhotos || 0) + '\n' +
+        'AutoCropper: ' + (st.cropperPrints || 0) + '\n' +
+        'BG Removals: ' + (st.bgRemovals || 0) + '\n' +
+        'Enhancements: ' + (st.enhancements || 0) + '\n' +
+        'Total Outputs: ' + totalStats(st) + '\n' +
+        '\n═══ LAST ' + logs.length + ' ACTIONS ═══\n' +
+        logs.map(l => new Date(l.ts).toLocaleString() + ' · ' + l.type).join('\n')
+      );
+    },
+    exportUsers() {
+      const list = Users.all();
+      if (!list.length) return alert('No users.');
+      const headers = ['Mobile','Name','Shop','Address','Password','Status','Amount','RegisteredAt','RechargeDate','ExpiryDate','IDCards','PassportPhotos','CropperPrints','BGRemovals','Enhancements','TotalOutputs'];
+      const rows = [headers.join(',')];
+      list.forEach(u => {
+        const p = getPlanInfo(u); const st = u.stats || emptyStats();
+        rows.push([
+          u.mobile, u.name, u.shopName, u.address, u.password || u.mobile,
+          u.status, u.amount,
+          u.registeredAt ? new Date(u.registeredAt).toISOString() : '',
+          p.rechargeDate ? new Date(p.rechargeDate).toISOString() : '',
+          p.expiryDate ? new Date(p.expiryDate).toISOString() : '',
+          st.idCards || 0, st.passportPhotos || 0, st.cropperPrints || 0, st.bgRemovals || 0, st.enhancements || 0,
+          totalStats(st)
+        ].map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(','));
+      });
+      const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'iloveprint_users_' + Date.now() + '.csv';
+      a.click();
+      addLog('admin_export', 'Exported ' + list.length);
+    },
+    renderLog() {
+      const q = (gEl('ilpSearchLog').value || '').toLowerCase().trim();
+      let log = LS.get(K.LOG, []);
+      if (q) log = log.filter(l => (l.user||'').toLowerCase().includes(q) || (l.mobile||'').toLowerCase().includes(q) || (l.type||'').toLowerCase().includes(q) || (l.detail||'').toLowerCase().includes(q));
+      const tb = gEl('ilpLogBody');
+      tb.innerHTML = '';
+      log.slice(0, 400).forEach(l => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + fmtDateTime(l.ts) + '</td><td>' + ilpEsc(l.user) + '</td><td>' + ilpEsc(l.mobile) + '</td><td>' + ilpEsc(l.type) + '</td><td>' + ilpEsc(l.detail || '') + '</td>';
+        tb.appendChild(tr);
+      });
+      if (log.length === 0) tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:22px;color:#94a3b8;">No activity.</td></tr>';
+    },
+    clearLog() {
+      if (!confirm('Clear local activity log?')) return;
+      LS.set(K.LOG, []);
+      this.renderLog();
+    },
+    renderAppsScript() { gEl('ilpAppsScriptCode').textContent = ILP_APPS_SCRIPT_CODE; },
+    copyAppsScript() {
+      if (navigator.clipboard) navigator.clipboard.writeText(ILP_APPS_SCRIPT_CODE).then(() => alert('✅ Copied'), () => alert('Select code manually.'));
+      else alert('Select code manually.');
+    }
+  };
+
+  /* ---------- Expose ---------- */
+  window.ILP_AUTH = ILP_AUTH;
+  window.ILP_ADMIN = ILP_ADMIN;
+  window.ILP_LOG = addLog;
+  window.ILP_SETTINGS = ILPSettings;
+
+  /* ============================================================
+     OVERRIDE original handleUserRegistration
+     ============================================================ */
+  window.handleUserRegistration = function (e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const name = (gEl('regName')?.value || '').trim();
+    const shop = (gEl('regShopName')?.value || '').trim();
+    const mobile = (gEl('regMobile')?.value || '').trim();
+    const addr = (gEl('regAddress')?.value || '').trim();
+    gEl('ilpRegName').value = name;
+    gEl('ilpRegShop').value = shop;
+    gEl('ilpRegMobile').value = mobile;
+    gEl('ilpRegAddr').value = addr;
+    const oldModal = gEl('userRegistrationModal');
+    if (oldModal) oldModal.style.display = 'none';
+    ILP_AUTH.showRegistration();
+  };
+
+  /* ============================================================
+     APPROVAL GATE — wrap switchSuiteSection
+     ============================================================ */
+  const _origSwitch = window.switchSuiteSection;
+  if (typeof _origSwitch === 'function') {
+    window.switchSuiteSection = function (mode) {
+      const acc = LS.get(K.ACC, null);
+      const adminIn = sessionStorage.getItem(K.ADMIN) === '1';
+      if (mode && mode !== 'landing' && !adminIn) {
+        if (!acc) { ILP_AUTH.showRegistration(); addLog('gate_block', 'unregistered → ' + mode); return; }
+        if (acc.status !== 'approved') {
+          if (acc.status === 'pending_payment') ILP_AUTH.showPaymentModal();
+          else ILP_AUTH.showPending();
+          addLog('gate_block', acc.status + ' → ' + mode);
+          return;
+        }
+        const plan = getPlanInfo(acc);
+        if (plan.expired) { ILP_AUTH.showExpired(); addLog('gate_block', 'expired → ' + mode); return; }
+        addLog('tool_open', mode);
+      }
+      return _origSwitch.apply(this, arguments);
+    };
+  }
+
+  /* ============================================================
+     STAT HOOKS — override checkMilestoneAndRecord
+     ============================================================ */
+  const _origMilestone = window.checkMilestoneAndRecord;
+  const serviceToStat = {
+    'ID Card Studio': 'idCards',
+    'Passport Photo': 'passportPhotos',
+    'AI BG & Upscale': 'bgRemovals'
+  };
+  if (typeof _origMilestone === 'function') {
+    window.checkMilestoneAndRecord = async function (serviceType, count) {
+      addLog('output', serviceType + ' × ' + (count || 1));
+      try {
+        const key = serviceToStat[serviceType];
+        if (key) incrementStat(key, count || 1);
+      } catch (e) {}
+      return _origMilestone.apply(this, arguments);
+    };
+  }
+
+  /* ============================================================
+     STAT HOOKS — AutoCropper print + AI download
+     ============================================================ */
+  window.addEventListener('DOMContentLoaded', function () {
+    const cp = gEl('btnPrint');
+    if (cp) {
+      const origClick = cp.onclick;
+      cp.onclick = function (e) {
+        try {
+          const docs = (typeof documents !== 'undefined' && Array.isArray(documents)) ? documents.length : 0;
+          if (docs > 0) incrementStat('cropperPrints', docs);
+        } catch (err) {}
+        if (origClick) return origClick.call(this, e);
+      };
+    }
+    const db = gEl('downloadBtn');
+    if (db) {
+      const origDl = db.onclick;
+      db.onclick = function (e) {
+        try {
+          const mode = (typeof currentBgMode !== 'undefined') ? currentBgMode : 'transparent';
+          const scale = (typeof currentScale !== 'undefined') ? currentScale : 1;
+          const clarity = (typeof clarityStrength !== 'undefined') ? clarityStrength : 0;
+          if (mode !== 'original') incrementStat('bgRemovals', 1);
+          if (scale > 1 || clarity > 0.05) incrementStat('enhancements', 1);
+        } catch (err) {}
+        if (origDl) return origDl.call(this, e);
+      };
+    }
+  });
+
+  /* ============================================================
+     TABS
+     ============================================================ */
+  document.addEventListener('click', function (e) {
+    const tab = e.target.closest('.ilp-tab');
+    if (!tab) return;
+    const name = tab.dataset.tab;
+    document.querySelectorAll('.ilp-tab').forEach(t => t.classList.toggle('active', t === tab));
+    document.querySelectorAll('.ilp-tab-panel').forEach(p => p.style.display = (p.dataset.panel === name) ? 'block' : 'none');
+  });
+
+  /* ============================================================
+     SHORTCUTS
+     ============================================================ */
+  window.addEventListener('keydown', function (e) {
+    if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+      e.preventDefault();
+      if (sessionStorage.getItem(K.ADMIN) === '1') ILP_ADMIN.open();
+      else ILP_AUTH.openAdminLogin();
+    }
+    if (e.key === 'Escape') { hide('ilpAdminLoginModal'); hide('ilpUserDash'); }
+  });
+
+  /* ============================================================
+     INIT
+     ============================================================ */
+  window.addEventListener('DOMContentLoaded', function () {
+    refreshBadge();
+    const acc = LS.get(K.ACC, null);
+    if (acc) {
+      if (acc.status === 'approved') {
+        const plan = getPlanInfo(acc);
+        if (plan.expired) setTimeout(() => ILP_AUTH.showExpired(), 700);
+        else if (plan.expiringSoon) setTimeout(() => {
+          if (confirm('⚠️ Your plan expires in ' + plan.daysLeft + ' day(s) on ' + fmtDate(plan.expiryDate) + '. Recharge now?')) ILP_AUTH.showRechargeModal();
+        }, 700);
+      } else if (acc.status === 'pending_payment') {
+        setTimeout(() => ILP_AUTH.showPaymentModal(), 600);
+      } else if (acc.status === 'pending_approval') {
+        setTimeout(() => ILP_AUTH.showPending(), 600);
+      }
+    } else {
+      setTimeout(() => { ILP_AUTH.showRegistration(); addLog('visit', 'New visitor'); }, 800);
+    }
+    const oldSub = gEl('regSubmitBtn');
+    if (oldSub) oldSub.textContent = 'Continue →';
+  });
+
+  /* ============================================================
+     GOOGLE APPS SCRIPT CODE (also shown in admin panel)
+     ============================================================ */
+  const ILP_APPS_SCRIPT_CODE = `/**
+ * iLovePrint.in — Google Sheet Backend v2
+ * Extensions → Apps Script → paste → Deploy → Web App
+ *   Execute as: Me     Who has access: Anyone
+ */
+function doGet(e)  { return handle(e); }
+function doPost(e) { return handle(e); }
+
+var HEADERS = [
+  'Mobile','Name','ShopName','Address','Password','Status','Amount',
+  'RegisteredAt','PaidAt','ApprovedAt','RechargeDate','ExpiryDate','PlanDays',
+  'IDCards','PassportPhotos','CropperPrints','BGRemovals','Enhancements','TotalOutputs'
+];
+
+function getUsersSheet(ss) {
+  var sh = ss.getSheetByName('Users');
+  if (!sh) { sh = ss.insertSheet('Users'); }
+  if (sh.getLastRow() === 0) sh.appendRow(HEADERS);
+  return sh;
+}
+function getLogsSheet(ss) {
+  var sh = ss.getSheetByName('ActivityLog');
+  if (!sh) { sh = ss.insertSheet('ActivityLog'); }
+  if (sh.getLastRow() === 0) sh.appendRow(['Timestamp','Mobile','Name','Service','Detail']);
+  return sh;
+}
+
+function handle(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var USERS = getUsersSheet(ss);
+  var LOGS  = getLogsSheet(ss);
+
+  var p = e.parameter || {};
+  var b = {};
+  try { if (e.postData && e.postData.contents) b = JSON.parse(e.postData.contents); } catch(err){}
+  var action = p.action || b.action || '';
+
+  if (action === 'ping') return json({ ok: true, msg: 'iLovePrint v2 backend online' });
+
+  if (action === 'register_user') {
+    var mobile = String(b.mobile || p.mobile || '').trim();
+    if (!mobile) return json({ ok:false, msg:'mobile required' });
+    var stats = b.stats || {};
+    var row = findRow(USERS, mobile);
+    var existing = row > 0 ? USERS.getRange(row, 1, 1, HEADERS.length).getValues()[0] : null;
+    var data = [
+      mobile,
+      b.name || p.name || (existing ? existing[1] : ''),
+      b.shopName || p.shopName || (existing ? existing[2] : ''),
+      b.address || p.address || (existing ? existing[3] : ''),
+      b.password || p.password || (existing ? existing[4] : mobile),
+      b.status || p.status || (existing ? existing[5] : 'pending_approval'),
+      b.amount || p.amount || (existing ? existing[6] : 50),
+      b.registeredAt || p.registeredAt || (existing ? existing[7] : new Date().toISOString()),
+      b.paidAt || p.paidAt || (existing ? existing[8] : ''),
+      (existing ? existing[9] : ''),
+      (existing ? existing[10] : ''),
+      (existing ? existing[11] : ''),
+      (existing ? existing[12] : 30),
+      stats.idCards != null ? stats.idCards : (existing ? existing[13] : 0),
+      stats.passportPhotos != null ? stats.passportPhotos : (existing ? existing[14] : 0),
+      stats.cropperPrints != null ? stats.cropperPrints : (existing ? existing[15] : 0),
+      stats.bgRemovals != null ? stats.bgRemovals : (existing ? existing[16] : 0),
+      stats.enhancements != null ? stats.enhancements : (existing ? existing[17] : 0),
+      (existing ? existing[18] : 0)
+    ];
+    data[18] = (+data[13]) + (+data[14]) + (+data[15]) + (+data[16]) + (+data[17]);
+    if (row > 0) USERS.getRange(row, 1, 1, HEADERS.length).setValues([data]);
+    else USERS.appendRow(data);
+    return json({ ok:true });
+  }
+
+  if (action === 'log_activity') {
+    LOGS.appendRow([ b.ts || new Date().toISOString(), b.mobile || '', b.name || '', b.service || '', b.detail || '' ]);
+    return json({ ok:true });
+  }
+
+  if (action === 'update_status') {
+    var m2 = String(b.mobile || p.mobile || '').trim();
+    var st = String(b.status || p.status || '').trim();
+    if (!m2 || !st) return json({ ok:false, msg:'mobile & status required' });
+    var r2 = findRow(USERS, m2);
+    if (r2 > 0) {
+      USERS.getRange(r2, 6).setValue(st);
+      if (st === 'approved') {
+        var now = new Date();
+        USERS.getRange(r2, 10).setValue(now.toISOString());
+        USERS.getRange(r2, 11).setValue(now.toISOString());
+        var planDays = USERS.getRange(r2, 13).getValue() || 30;
+        var expiry = new Date(now.getTime() + planDays * 24 * 60 * 60 * 1000);
+        USERS.getRange(r2, 12).setValue(expiry.toISOString());
+      }
+    }
+    return json({ ok:true });
+  }
+
+  if (action === 'extend_plan') {
+    var mEx = String(b.mobile || p.mobile || '').trim();
+    var days = parseInt(b.days || p.days || 30, 10);
+    var rEx = findRow(USERS, mEx);
+    if (rEx > 0) {
+      var curExp = USERS.getRange(rEx, 12).getValue();
+      var base = curExp ? new Date(curExp) : new Date();
+      if (base.getTime() < Date.now()) base = new Date();
+      var newExp = new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
+      USERS.getRange(rEx, 6).setValue('approved');
+      USERS.getRange(rEx, 11).setValue(new Date().toISOString());
+      USERS.getRange(rEx, 12).setValue(newExp.toISOString());
+    }
+    return json({ ok:true });
+  }
+
+  if (action === 'increment_stat') {
+    var mS = String(b.mobile || p.mobile || '').trim();
+    var key = b.statKey || '';
+    var val = +b.statValue || 0;
+    var rS = findRow(USERS, mS);
+    if (rS > 0 && key) {
+      var colMap = { idCards:14, passportPhotos:15, cropperPrints:16, bgRemovals:17, enhancements:18 };
+      var col = colMap[key];
+      if (col) USERS.getRange(rS, col).setValue(val);
+      var rng = USERS.getRange(rS, 14, 1, 5).getValues()[0];
+      var total = rng.reduce(function(a, c){ return a + (+c || 0); }, 0);
+      USERS.getRange(rS, 19).setValue(total);
+    }
+    return json({ ok:true });
+  }
+
+  if (action === 'reset_stats') {
+    var mR = String(b.mobile || p.mobile || '').trim();
+    var rR = findRow(USERS, mR);
+    if (rR > 0) {
+      USERS.getRange(rR, 14, 1, 6).setValues([[0,0,0,0,0,0]]);
+    }
+    return json({ ok:true });
+  }
+
+  if (action === 'get_user') {
+    var m3 = String(p.mobile || b.mobile || '').trim();
+    var r3 = findRow(USERS, m3);
+    if (r3 <= 0) return json({ ok:false });
+    var v = USERS.getRange(r3, 1, 1, HEADERS.length).getValues()[0];
+    return json({
+      ok:true, mobile:v[0], name:v[1], shopName:v[2], address:v[3],
+      password:v[4], status:v[5], amount:v[6],
+      registeredAt:v[7], paidAt:v[8], approvedAt:v[9],
+      rechargeDate:v[10], expiryDate:v[11], planDays:v[12],
+      idCards:v[13], passportPhotos:v[14], cropperPrints:v[15],
+      bgRemovals:v[16], enhancements:v[17], totalOutputs:v[18]
+    });
+  }
+
+  if (action === 'get_users') {
+    var last = USERS.getLastRow();
+    if (last < 2) return json([]);
+    var rows = USERS.getRange(2, 1, last - 1, HEADERS.length).getValues();
+    var out = rows.filter(function(r){ return r[0]; }).map(function(r){
+      return {
+        mobile:r[0], name:r[1], shopName:r[2], address:r[3],
+        password:r[4], status:r[5], amount:r[6],
+        registeredAt:r[7], paidAt:r[8], approvedAt:r[9],
+        rechargeDate:r[10], expiryDate:r[11], planDays:r[12],
+        idCards:r[13], passportPhotos:r[14], cropperPrints:r[15],
+        bgRemovals:r[16], enhancements:r[17], totalOutputs:r[18]
+      };
+    });
+    return json(out);
+  }
+
+  return json({ ok:false, msg:'unknown action: ' + action });
+}
+
+function findRow(sheet, mobile) {
+  var last = sheet.getLastRow();
+  if (last < 2) return -1;
+  var col = sheet.getRange(2, 1, last - 1, 1).getValues();
+  for (var i = 0; i < col.length; i++) {
+    if (String(col[i][0]).trim() === String(mobile).trim()) return i + 2;
+  }
+  return -1;
+}
+
+function json(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}`;
+
+  window.ILP_APPS_SCRIPT_CODE = ILP_APPS_SCRIPT_CODE;
+})();
+</script>
+<!-- ============ END iLovePrint ADD-ON v2 ============ -->
+
+
+<!-- ============ iLovePrint ADD-ON v3 : Custom HTML Module Manager ============ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ================================================================
+     IndexedDB storage for custom HTML modules (persistent, no size limit)
+     ================================================================ */
+  const DB_NAME = 'iloveprint_modules_db';
+  const STORE   = 'modules';
+
+  const _openDB = () => new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE))
+        db.createObjectStore(STORE, { keyPath: 'id' });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  });
+
+  const _getAll = async () => {
+    try {
+      const db = await _openDB();
+      return await new Promise(res => {
+        const tx = db.transaction(STORE, 'readonly');
+        const rq = tx.objectStore(STORE).getAll();
+        rq.onsuccess = () => res(rq.result || []);
+        rq.onerror   = () => res([]);
+      });
+    } catch (e) { return []; }
+  };
+
+  const _put = async (m) => {
+    const db = await _openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(m);
+      tx.oncomplete = resolve;
+      tx.onerror    = () => reject(tx.error);
+    });
+  };
+
+  const _del = async (id) => {
+    const db = await _openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).delete(id);
+      tx.oncomplete = resolve;
+      tx.onerror    = () => reject(tx.error);
+    });
+  };
+
+  const _esc = s => String(s == null ? '' : s)
+    .replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+  /* ================================================================
+     MODULE MANAGER
+     ================================================================ */
+  const ILP_MODULES = {
+    cache: [],
+
+    async load() {
+      this.cache = await _getAll();
+      this.renderLanding();
+    },
+
+    renderLanding() {
+      const grid = document.querySelector('.landing-cards-grid');
+      if (!grid) return;
+      grid.querySelectorAll('[data-dynamic-module]').forEach(el => el.remove());
+
+      this.cache.forEach(m => {
+        const card = document.createElement('div');
+        card.className = 'landing-hub-card';
+        card.setAttribute('data-dynamic-module', m.id);
+        card.innerHTML = `
+          <div>
+            <div class="l-card-top">
+              <div class="l-card-icon" style="background:#f0f9ff;color:#0284c7;">${_esc(m.icon || '🧩')}</div>
+              <span class="l-badge-pill" style="background:#e0f2fe;color:#0369a1;">Custom</span>
+            </div>
+            <h3>${_esc(m.name)}</h3>
+            <p>${_esc(m.description || 'Custom module')}</p>
+          </div>
+          <div class="l-card-btn" style="color:#0284c7;">
+            <span>Open Module</span><span>➔</span>
+          </div>`;
+        card.addEventListener('click', () => this.open(m.id));
+        grid.appendChild(card);
+      });
+    },
+
+    open(id) {
+      /* ---- SAME AUTH GATE AS switchSuiteSection ---- */
+      const acc     = JSON.parse(localStorage.getItem('iloveprint_account') || 'null');
+      const adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
+      if (!adminIn) {
+        if (!acc) { window.ILP_AUTH.showRegistration(); return; }
+        if (acc.status !== 'approved') {
+          if (acc.status === 'pending_payment') window.ILP_AUTH.showPaymentModal();
+          else window.ILP_AUTH.showPending();
+          return;
+        }
+        if (acc.expiryDate && Date.now() > acc.expiryDate) {
+          window.ILP_AUTH.showExpired(); return;
+        }
+      }
+
+      const mod = this.cache.find(m => m.id === id);
+      if (!mod) return;
+
+      ['landingSection','smartIdSection','passportSection','bgaiSection','cropperSection']
+        .forEach(sid => { const el = document.getElementById(sid); if (el) el.style.display = 'none'; });
+      const tg = document.getElementById('topGuideBar'); if (tg) tg.style.display = 'none';
+      const hb = document.getElementById('topHubReturnBtn'); if (hb) hb.style.display = 'inline-flex';
+
+      let section = document.getElementById('dynamicModuleSection');
+      if (!section) {
+        section = document.createElement('section');
+        section.id = 'dynamicModuleSection';
+        section.style.display = 'none';
+        section.innerHTML = `
+          <div class="card no-print" style="margin-bottom:20px;">
+            <div class="top-bar">
+              <div style="display:flex;align-items:center;gap:14px;">
+                <button class="home-nav-btn" id="dynModBackBtn">🏠 Return to Home / Hub</button>
+                <div>
+                  <h2 id="dynModTitle">Module</h2>
+                  <small id="dynModSubtitle">Custom Module</small>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="padding:0;overflow:hidden;">
+            <iframe id="dynModFrame"
+                    style="width:100%;height:calc(100vh - 200px);min-height:600px;border:0;display:block;background:#fff;"></iframe>
+          </div>`;
+        const landing = document.getElementById('landingSection');
+        landing.parentNode.insertBefore(section, landing.nextSibling);
+        section.querySelector('#dynModBackBtn').addEventListener('click', () => this.close());
+      }
+
+      document.getElementById('dynModTitle').textContent    = (mod.icon || '🧩') + ' ' + mod.name;
+      document.getElementById('dynModSubtitle').textContent = mod.description || 'Custom Module';
+      document.getElementById('dynModFrame').srcdoc         = mod.html;
+      section.style.display = 'block';
+      document.body.className = 'mode-dynamic';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+
+    close() {
+      const section = document.getElementById('dynamicModuleSection');
+      if (section) section.style.display = 'none';
+      const frame = document.getElementById('dynModFrame');
+      if (frame) frame.srcdoc = '';
+      if (typeof window.switchSuiteSection === 'function') window.switchSuiteSection('landing');
+    }
+  };
+  window.ILP_MODULES = ILP_MODULES;
+
+  /* ================================================================
+     ADMIN UI INJECTION — adds a "Modules" tab inside existing dash
+     ================================================================ */
+  function injectAdminTab() {
+    const tabs = document.querySelector('.ilp-dash-tabs');
+    const body = document.querySelector('.ilp-dash-body');
+    if (!tabs || !body || tabs.querySelector('[data-tab="modules"]')) return;
+
+    const tab = document.createElement('button');
+    tab.className = 'ilp-tab';
+    tab.setAttribute('data-tab', 'modules');
+    tab.textContent = '🧩 Modules';
+    tabs.appendChild(tab);
+
+    const panel = document.createElement('div');
+    panel.className = 'ilp-tab-panel';
+    panel.setAttribute('data-panel', 'modules');
+    panel.style.display = 'none';
+    panel.innerHTML = `
+      <div class="ilp-toolbar">
+        <h3 style="margin:0;color:#f8fafc;font-size:14px;">🧩 Custom Module Manager</h3>
+        <span class="ilp-stats" id="ilpModCount">0 modules</span>
+      </div>
+
+      <div style="background:#1e293b;border:1px solid rgba(148,163,184,.25);border-radius:14px;padding:16px;margin-bottom:14px;">
+        <h4 style="margin:0 0 10px;color:#f8fafc;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;">
+          ➕ Add New Module
+        </h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="ilp-field"><label style="color:#94a3b8;">Module Name *</label>
+            <input id="ilpModName" type="text" placeholder="e.g. Aadhaar Print Studio"></div>
+          <div class="ilp-field"><label style="color:#94a3b8;">Icon (Emoji)</label>
+            <input id="ilpModIcon" type="text" placeholder="🧩" maxlength="4"></div>
+        </div>
+        <div class="ilp-field"><label style="color:#94a3b8;">Description (shown on landing card)</label>
+          <input id="ilpModDesc" type="text" placeholder="Short description"></div>
+        <div class="ilp-field"><label style="color:#94a3b8;">HTML File *</label>
+          <input id="ilpModFile" type="file" accept=".html,.htm,text/html"></div>
+        <button class="ilp-btn primary" id="ilpModUploadBtn"
+                style="margin-top:10px;min-width:220px;">⬆ Upload &amp; Publish Module</button>
+        <div class="ilp-note" style="margin-top:10px;background:#0c4a6e;color:#bae6fd;border-color:#0284c7;">
+          ℹ️ Modules are stored in this browser's IndexedDB permanently — they survive page reloads,
+          browser restarts, and system reboots. Delete them any time from the list below.
+        </div>
+      </div>
+
+      <div id="ilpModList"
+           style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;"></div>`;
+    body.appendChild(panel);
+
+    panel.querySelector('#ilpModUploadBtn').addEventListener('click', handleModuleUpload);
+  }
+
+  async function handleModuleUpload() {
+    const nameEl = document.getElementById('ilpModName');
+    const iconEl = document.getElementById('ilpModIcon');
+    const descEl = document.getElementById('ilpModDesc');
+    const fileEl = document.getElementById('ilpModFile');
+
+    const name = nameEl.value.trim();
+    const file = fileEl.files[0];
+    if (!name) return alert('Please enter a module name.');
+    if (!file) return alert('Please select an HTML file.');
+
+    const html = await file.text();
+    const mod = {
+      id: 'mod_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      name,
+      icon: iconEl.value.trim() || '🧩',
+      description: descEl.value.trim() || 'Custom module',
+      html,
+      createdAt: Date.now()
+    };
+    await _put(mod);
+
+    nameEl.value = ''; iconEl.value = ''; descEl.value = ''; fileEl.value = '';
+
+    await ILP_MODULES.load();
+    renderModulesList();
+    alert('✅ Module "' + name + '" is now live on the landing page.\n\nIt is saved permanently in this browser.');
+  }
+
+  function renderModulesList() {
+    const list    = document.getElementById('ilpModList');
+    const countEl = document.getElementById('ilpModCount');
+    if (!list) return;
+    if (countEl) countEl.textContent = ILP_MODULES.cache.length + ' module(s)';
+    list.innerHTML = '';
+
+    if (!ILP_MODULES.cache.length) {
+      list.innerHTML =
+        '<div style="color:#94a3b8;font-size:13px;padding:20px;text-align:center;grid-column:1/-1;">' +
+        'No custom modules yet. Upload one above to add it to the landing page.</div>';
+      return;
+    }
+
+    ILP_MODULES.cache.forEach(m => {
+      const card = document.createElement('div');
+      card.style.cssText =
+        'background:#0f172a;border:1px solid rgba(148,163,184,.2);border-radius:12px;' +
+        'padding:12px 14px;display:flex;flex-direction:column;gap:6px;';
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:22px;">${_esc(m.icon || '🧩')}</span>
+          <b style="color:#f8fafc;font-size:13px;flex:1;word-break:break-word;">${_esc(m.name)}</b>
+        </div>
+        <div style="font-size:11.5px;color:#94a3b8;line-height:1.4;">${_esc(m.description || '')}</div>
+        <div style="font-size:10.5px;color:#64748b;">
+          ${(m.html.length / 1024).toFixed(1)} KB · ${new Date(m.createdAt).toLocaleDateString()}
+        </div>
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          <button class="ilp-act-btn ilp-act-view" data-act="preview">👁 Preview</button>
+          <button class="ilp-act-btn ilp-act-delete" data-act="delete">🗑 Delete</button>
+        </div>`;
+
+      card.querySelector('[data-act="preview"]').addEventListener('click', () => {
+        document.getElementById('ilpAdminDash').style.display = 'none';
+        ILP_MODULES.open(m.id);
+      });
+      card.querySelector('[data-act="delete"]').addEventListener('click', async () => {
+        if (!confirm('Delete module "' + m.name + '"?\n\nThis cannot be undone.')) return;
+        await _del(m.id);
+        await ILP_MODULES.load();
+        renderModulesList();
+      });
+      list.appendChild(card);
+    });
+  }
+
+  /* Hook into admin dashboard open */
+  if (window.ILP_ADMIN) {
+    const _origOpen = window.ILP_ADMIN.open;
+    window.ILP_ADMIN.open = function () {
+      if (_origOpen) _origOpen.apply(this, arguments);
+      renderModulesList();
+    };
+  }
+
+  /* ================================================================
+     INIT
+     ================================================================ */
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      injectAdminTab();
+      ILP_MODULES.load();
+    }, 150);
+  });
+
+})();
+</script>
+<!-- ============ END iLovePrint ADD-ON v3 ============ -->
+
 
 <!-- ============================================================
      iLovePrint ADD-ON v4 — CROSS-DEVICE CLOUD SYNC
@@ -5291,275 +6944,6 @@
 })();
 </script>
 <!-- ============ END iLovePrint ADD-ON v4 ============ -->
-
-
-
-
-  
-<button id="ilpAdminFab" class="ilp-fab no-print" onclick="ILP_AUTH.openAdminLogin()" title="Admin">🛡️</button>
-
-<script>
-(function () {
-  'use strict';
-  const ACC_KEY = 'iloveprint_account', SET_KEY = 'iloveprint_settings_v2', USERS_KEY = 'iloveprint_users_db', AKEY_SES = 'iloveprint_admin_key';
-  const $ = id => document.getElementById(id);
-  const LS = { get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v);}catch(e){return d;}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}} };
-
-  function cfg() { return Object.assign({ amount: 50, planDays: 30, sheetUrl: '' }, LS.get(SET_KEY, {})); }
-  function cloudUrl() { return cfg().sheetUrl || (typeof GOOGLE_SHEET_API_URL === 'string' && GOOGLE_SHEET_API_URL) || ''; }
-  function adminKey() { return sessionStorage.getItem(AKEY_SES) || ''; }
-
-  async function cloud(params) {
-    const base = cloudUrl();
-    if (!base) throw new Error('NO_CLOUD_URL');
-    const qs = new URLSearchParams(params).toString();
-    const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), 25000);
-    try {
-      const res = await fetch(base + (base.includes('?') ? '&' : '?') + qs, { method: 'GET', redirect: 'follow', cache: 'no-store', signal: ctl.signal });
-      const txt = await res.text();
-      return JSON.parse(txt);
-    } finally { clearTimeout(timer); }
-  }
-
-  let busyEl = null;
-  function busy(on, msg) {
-    if (on) {
-      if (!busyEl) {
-        busyEl = document.createElement('div');
-        busyEl.style.cssText = 'position:fixed;inset:0;background:rgba(6,12,26,.6);z-index:100999;display:flex;align-items:center;justify-content:center;';
-        busyEl.innerHTML = '<div style="background:#fff;padding:20px 28px;border-radius:16px;font-weight:700;color:#0f172a;display:flex;gap:12px;align-items:center;"><span style="width:18px;height:18px;border:3px solid #cbd5e1;border-top-color:#2563eb;border-radius:50%;animation:spin 1s linear infinite;"></span><span id="ilpBusyMsg">Working…</span></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
-        document.body.appendChild(busyEl);
-      }
-      $('ilpBusyMsg').textContent = msg || 'Working…';
-      busyEl.style.display = 'flex';
-    } else if (busyEl) busyEl.style.display = 'none';
-  }
-
-  function saveAccountFromServer(u) {
-    const prev = LS.get(ACC_KEY, {}) || {};
-    const acc = Object.assign(prev, u, { lastSync: Date.now() });
-    if (u.registeredAt) acc.registeredAt = Date.parse(u.registeredAt);
-    if (u.paidAt) acc.paidAt = Date.parse(u.paidAt);
-    if (u.approvedAt) acc.approvedAt = Date.parse(u.approvedAt);
-    if (u.rechargeDate) acc.rechargeDate = Date.parse(u.rechargeDate);
-    if (u.expiryDate) acc.expiryDate = Date.parse(u.expiryDate);
-    LS.set(ACC_KEY, acc);
-    try { LS.set('iloveprint_user_profile', { name: acc.name, shopName: acc.shopName, mobile: acc.mobile, address: acc.address }); } catch(e){}
-    return acc;
-  }
-
-  function planInfo(acc) {
-    const planDays = acc.planDays || cfg().planDays || 30;
-    const expiry = acc.expiryDate || null;
-    const now = Date.now();
-    let daysLeft = 0, expired = false, expiringSoon = false;
-    if (expiry) { daysLeft = Math.ceil((expiry - now) / 86400000); expired = now > expiry; expiringSoon = !expired && daysLeft <= 5; }
-    return { expiry, daysLeft, expired, expiringSoon, planDays };
-  }
-
-  function refreshBadge() {
-    const acc = LS.get(ACC_KEY, null);
-    const badge = $('ilpUserBadge');
-    if (!badge) return;
-    if (!acc) { badge.style.display = 'none'; return; }
-    badge.style.display = 'flex';
-    $('ilpUserName').textContent = acc.name || 'User';
-    let st = acc.status || 'pending_payment';
-    if (st === 'approved') { const p = planInfo(acc); if (p.expired) st = 'expired'; else if (p.expiringSoon) st = 'expiring'; }
-    $('ilpUserStatus').textContent = st.replace('_', ' ');
-    $('ilpUserDot').className = 'ilp-dot' + (st === 'approved' ? ' ok' : (st === 'expired' || st === 'rejected' || st === 'suspended') ? ' bad' : '');
-  }
-
-  function routeByStatus(acc) {
-    const st = acc.status;
-    if (st === 'approved') { const p = planInfo(acc); if (p.expired) { ILP_AUTH.showExpired(); return; } ILP_AUTH.hideAll(); return; }
-    if (st === 'pending_approval') { ILP_AUTH.showPending(); return; }
-    if (st === 'pending_payment') { ILP_AUTH.showPaymentModal(); return; }
-    if (st === 'rejected' || st === 'suspended') { ILP_AUTH.hideAll(); alert('Account is ' + st + '. Contact admin.'); return; }
-    ILP_AUTH.showPaymentModal();
-  }
-
-  let pollTimer = null;
-  function startPendingPoll() {
-    stopPendingPoll();
-    pollTimer = setInterval(async () => {
-      const acc = LS.get(ACC_KEY, null);
-      if (!acc || acc.status !== 'pending_approval') { stopPendingPoll(); return; }
-      try {
-        const r = await cloud({ action: 'status', mobile: acc.mobile });
-        if (r && r.ok && r.user && r.user.status !== 'pending_approval') {
-          const fresh = saveAccountFromServer(r.user); refreshBadge(); stopPendingPoll();
-          if (fresh.status === 'approved') { ILP_AUTH.hideAll(); alert('🎉 Account approved! Tools unlocked.'); } else { ILP_AUTH.hideAll(); alert('Status: ' + fresh.status); }
-        }
-      } catch (e) {}
-    }, 12000);
-  }
-  function stopPendingPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
-
-  const ILP_AUTH = {
-    hideAll() { ['ilpPayModal','ilpPendingModal','ilpExpiredModal','ilpUserDash','ilpLoginModal','ilpRegModal'].forEach(id => { const el = $(id); if (el) el.style.display = 'none'; }); stopPendingPoll(); },
-    showRegistration() { this.hideAll(); $('ilpRegModal').style.display = 'flex'; },
-    showLogin() { this.hideAll(); $('ilpLoginModal').style.display = 'flex'; },
-    showPaymentModal(isRecharge) {
-      const acc = LS.get(ACC_KEY, null); if (!acc) return this.showRegistration();
-      this.hideAll();
-      $('ilpPayTitle').textContent = isRecharge ? '🔄 Recharge Plan' : '💳 Complete Payment';
-      $('ilpPayAmountBig').textContent = '₹' + cfg().amount;
-      $('ilpQrImg').src = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' + encodeURIComponent('upi://pay?pa=' + (cfg().upiId || '') + '&pn=iLovePrint&am=' + cfg().amount + '&cu=INR');
-      $('ilpPayModal').style.display = 'flex';
-    },
-    showRechargeModal() { this.showPaymentModal(true); },
-    showPending() { const acc = LS.get(ACC_KEY, null); if (!acc) return this.showRegistration(); this.hideAll(); $('ilpPendingModal').style.display = 'flex'; startPendingPoll(); },
-    showExpired() { const acc = LS.get(ACC_KEY, null); if (!acc) return this.showRegistration(); this.hideAll(); $('ilpExpiredModal').style.display = 'flex'; },
-
-    async submitRegistration() {
-      if (!cloudUrl()) return alert('Cloud URL not set. Please configure in Admin Settings.');
-      const name = $('ilpRegName').value.trim(), shop = $('ilpRegShop').value.trim(), mobile = $('ilpRegMobile').value.trim(), addr = $('ilpRegAddr').value.trim();
-      if (!name || !shop || !addr) return alert('Please fill all fields.');
-      if (!/^\d{10}$/.test(mobile)) return alert('Enter a valid 10-digit mobile number.');
-      busy(true, 'Creating your account…');
-      try {
-        const r = await cloud({ action: 'register', mobile, name, shopName: shop, address: addr, password: mobile, amount: cfg().amount });
-        busy(false);
-        if (!r.ok) { if (r.code === 'EXISTS') { alert(r.msg); return this.showLogin(); } return alert(r.msg || 'Registration failed.'); }
-        const acc = saveAccountFromServer(r.user); refreshBadge(); routeByStatus(acc);
-      } catch (err) { busy(false); alert('Cannot reach server. Registration needs internet.\n\n' + err.message); }
-    },
-
-    async submitLogin() {
-      if (!cloudUrl()) return alert('Cloud URL not set. Please configure in Admin Settings.');
-      const mobile = $('ilpLoginMobile').value.trim(), pass = $('ilpLoginPass').value;
-      if (!/^\d{10}$/.test(mobile)) return alert('Enter a valid 10-digit mobile number.');
-      if (!pass) return alert('Enter your password.');
-      busy(true, 'Signing in…');
-      try {
-        const r = await cloud({ action: 'login', mobile, password: pass });
-        busy(false);
-        if (!r.ok) { if (r.code === 'NOT_FOUND') return alert('Mobile not registered. Please register.'); if (r.code === 'BAD_PASS') return alert('Incorrect password.'); return alert(r.msg || 'Login failed.'); }
-        const acc = saveAccountFromServer(r.user); refreshBadge(); routeByStatus(acc);
-        if (acc.status === 'approved' && !planInfo(acc).expired) alert('Welcome back, ' + acc.name + '!');
-      } catch (err) { busy(false); alert('Cannot reach server.\n\n' + err.message); }
-    },
-
-    async markPaid() {
-      const acc = LS.get(ACC_KEY, null); if (!acc) return this.showRegistration();
-      if (!cloudUrl()) return alert('Cloud URL not set.');
-      busy(true, 'Submitting…');
-      try {
-        const r = await cloud({ action: 'mark_paid', mobile: acc.mobile, amount: cfg().amount });
-        busy(false);
-        if (r.ok && r.user) { saveAccountFromServer(r.user); refreshBadge(); this.showPending(); }
-        else alert('Failed to mark payment.');
-      } catch (e) { busy(false); alert('Server error: ' + e.message); }
-    },
-
-    async checkStatus() {
-      const acc = LS.get(ACC_KEY, null); if (!acc) return this.showRegistration();
-      if (!cloudUrl()) return alert('Cloud URL not set.');
-      busy(true, 'Checking…');
-      try {
-        const r = await cloud({ action: 'status', mobile: acc.mobile });
-        busy(false);
-        if (!r.ok) return alert(r.msg || 'Could not check status.');
-        const fresh = saveAccountFromServer(r.user); refreshBadge();
-        if (fresh.status === 'approved') { const p = planInfo(fresh); if (p.expired) { stopPendingPoll(); return this.showExpired(); } stopPendingPoll(); this.hideAll(); alert('🎉 Approved! Active until ' + new Date(p.expiry).toLocaleDateString('en-IN')); }
-        else if (fresh.status === 'rejected' || fresh.status === 'suspended') { stopPendingPoll(); alert('Status: ' + fresh.status); }
-        else alert('Still waiting for admin approval.');
-      } catch (e) { busy(false); alert('Server error: ' + e.message); }
-    },
-
-    logout() { if (!confirm('Logout?')) return; LS.set(ACC_KEY, null); this.hideAll(); refreshBadge(); if (typeof window.switchSuiteSection === 'function') window.switchSuiteSection('landing'); },
-    openUserDash() {
-      const acc = LS.get(ACC_KEY, null); if (!acc) return this.showRegistration();
-      this.hideAll();
-      $('ilpUDName').textContent = acc.name; $('ilpUDMobile').textContent = acc.mobile; $('ilpUDShop').textContent = acc.shopName;
-      $('ilpUDStatus').textContent = acc.status; $('ilpUDExpiry').textContent = acc.expiryDate ? new Date(acc.expiryDate).toLocaleDateString('en-IN') : '-';
-      $('ilpUserDash').style.display = 'flex';
-    },
-    closeUserDash() { $('ilpUserDash').style.display = 'none'; },
-
-    openAdminLogin() { $('ilpAdminUser').value = ''; $('ilpAdminPass').value = ''; $('ilpAdminLoginModal').style.display = 'flex'; },
-    closeAdminLogin() { $('ilpAdminLoginModal').style.display = 'none'; },
-    async adminLogin() {
-      const u = $('ilpAdminUser').value.trim(), p = $('ilpAdminPass').value;
-      if (u === 'admin' && p === 'sajid@7254') { sessionStorage.setItem('ilp_admin_session', '1'); this.closeAdminLogin(); ILP_ADMIN.open(); }
-      else alert('Invalid admin credentials.');
-    },
-    adminLogout() { sessionStorage.removeItem('ilp_admin_session'); $('ilpAdminDash').style.display = 'none'; }
-  };
-
-  const ILP_ADMIN = {
-    open() { if (sessionStorage.getItem('ilp_admin_session') !== '1') return this.showLogin(); this.hideAll(); $('ilpAdminDash').style.display = 'flex'; this.loadSettings(); this.refreshFromSheet(true); },
-    loadSettings() { const c = cfg(); $('ilpSetSheetUrl').value = c.sheetUrl || ''; $('ilpSetAdminKey').value = adminKey(); $('ilpSetAmount').value = c.amount; $('ilpSetPlanDays').value = c.planDays; },
-    saveSettings() { LS.set(SET_KEY, { sheetUrl: $('ilpSetSheetUrl').value.trim(), amount: parseFloat($('ilpSetAmount').value) || 50, planDays: parseInt($('ilpSetPlanDays').value) || 30 }); sessionStorage.setItem(AKEY_SES, $('ilpSetAdminKey').value.trim()); alert('✅ Settings saved.'); },
-    async refreshFromSheet(silent) {
-      if (!cloudUrl()) return silent ? null : alert('Set Google Apps Script URL in Settings first.');
-      const key = adminKey(); if (!key) return silent ? null : alert('Enter Admin Key in Settings.');
-      busy(true, 'Syncing users…');
-      try {
-        const r = await cloud({ action: 'admin_list', adminKey: key });
-        busy(false);
-        if (!r.ok) { if (!silent) alert(r.msg || 'Sync failed.'); return; }
-        LS.set(USERS_KEY, r.users || []); this.renderUsers();
-        if (!silent) alert('✅ Synced ' + (r.users || []).length + ' users.');
-      } catch (e) { busy(false); if (!silent) alert('Sync error: ' + e.message); }
-    },
-    renderUsers() {
-      const list = LS.get(USERS_KEY, []);
-      const tb = $('ilpUsersTable').querySelector('tbody'); tb.innerHTML = '';
-      list.forEach((u, i) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${i+1}</td><td>${u.name}</td><td>${u.mobile}</td><td>${u.shopName}</td>
-          <td><span class="ilp-pill ${u.status}">${u.status.replace('_',' ')}</span></td>
-          <td>${u.expiryDate ? new Date(u.expiryDate).toLocaleDateString('en-IN') : '-'}</td>
-          <td>
-            ${u.status !== 'approved' ? `<button class="ilp-act-btn ilp-act-approve" onclick="ILP_ADMIN.action('admin_status','${u.mobile}','approved')">✓</button>` : ''}
-            <button class="ilp-act-btn ilp-act-reject" onclick="ILP_ADMIN.action('admin_status','${u.mobile}','rejected')">⨯</button>
-            <button class="ilp-act-btn ilp-act-delete" onclick="ILP_ADMIN.action('admin_delete','${u.mobile}','')">🗑</button>
-          </td>`;
-        tb.appendChild(tr);
-      });
-    },
-    async action(act, mobile, val) {
-      if (!confirm('Confirm action for ' + mobile + '?')) return;
-      busy(true, 'Working…');
-      try {
-        const params = { action: act, mobile, adminKey: adminKey() };
-        if (act === 'admin_status') params.status = val;
-        const r = await cloud(params); busy(false);
-        if (r.ok) this.refreshFromSheet(true); else alert(r.msg || 'Action failed.');
-      } catch (e) { busy(false); alert('Error: ' + e.message); }
-    }
-  };
-
-  window.ILP_AUTH = ILP_AUTH; window.ILP_ADMIN = ILP_ADMIN;
-
-  // Override the old switchSuiteSection to add the auth gate
-  const _origSwitch = window.switchSuiteSection;
-  if (typeof _origSwitch === 'function') {
-    window.switchSuiteSection = function (mode) {
-      const acc = LS.get(ACC_KEY, null);
-      const adminIn = sessionStorage.getItem('ilp_admin_session') === '1';
-      if (mode && mode !== 'landing' && !adminIn) {
-        if (!acc) { ILP_AUTH.showRegistration(); return; }
-        if (acc.status !== 'approved') { routeByStatus(acc); return; }
-        const p = planInfo(acc); if (p.expired) { ILP_AUTH.showExpired(); return; }
-      }
-      return _origSwitch.apply(this, arguments);
-    };
-  }
-
-  document.addEventListener('click', function(e) {
-    const tab = e.target.closest('.ilp-tab'); if (!tab) return;
-    document.querySelectorAll('.ilp-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active');
-    document.querySelectorAll('.ilp-tab-panel').forEach(p => p.style.display = p.dataset.panel === tab.dataset.tab ? 'block' : 'none');
-  });
-
-  window.addEventListener('DOMContentLoaded', function() { refreshBadge(); });
-  window.addEventListener('focus', async function() { const acc = LS.get(ACC_KEY, null); if (acc && cloudUrl()) { try { const r = await cloud({ action: 'status', mobile: acc.mobile }); if (r.ok && r.user) { saveAccountFromServer(r.user); refreshBadge(); } } catch(e){} } });
-})();
-</script>
 
 
 
