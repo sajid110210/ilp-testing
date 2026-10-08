@@ -6637,18 +6637,24 @@ window.ILP_MODULES = ILP_MODULES;
     if (!base) { const e = new Error('NO_CLOUD_URL'); e.code = 'NO_CLOUD_URL'; throw e; }
     const qs = new URLSearchParams(params).toString();
     const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), 25000);
+    const timer = setTimeout(() => ctl.abort(), 60000);
     try {
       const res = await fetch(base + (base.indexOf('?') >= 0 ? '&' : '?') + qs, {
         method: 'GET', redirect: 'follow', cache: 'no-store', signal: ctl.signal
       });
-      const txt = await res.text();
+            const txt = await res.text();
       try { return JSON.parse(txt); }
       catch (e) {
-        const err = new Error('BAD_RESPONSE: ' + txt.slice(0, 160));
+        const err = new Error('Server replied with non-JSON: ' + txt.slice(0, 200));
         throw err;
       }
+    } catch (e) {
+      if (e && e.name === 'AbortError') {
+        throw new Error('Server took longer than 60s. Backend is likely broken — check Apps Script deployment.');
+      }
+      throw e;
     } finally { clearTimeout(timer); }
+  }
   }
 
   /* ---------------- busy overlay ---------------- */
