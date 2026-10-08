@@ -6192,108 +6192,200 @@ function json(obj) {
   /* ================================================================
      MODULE MANAGER
      ================================================================ */
-  const ILP_MODULES = {
-    cache: [],
+  /* ---------- small cloud helpers (GET + POST) ---------- */
+function _ilpCloudUrl() {
+  try {
+    if (typeof ILP_SETTINGS !== 'undefined' && ILP_SETTINGS.sheetUrl) {
+      const u = ILP_SETTINGS.sheetUrl();
+      if (u) return u;
+    }
+  } catch (e) {}
+  try {
+    if (typeof GOOGLE_SHEET_API_URL === 'string' && GOOGLE_SHEET_API_URL) return GOOGLE_SHEET_API_URL;
+  } catch (e) {}
+  return '';
+}
+async function _ilpCloudGet(params) {
+  const base = _ilpCloudUrl();
+  if (!base) throw new Error('NO_CLOUD_URL');
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(base + (base.indexOf('?') >= 0 ? '&' : '?') + qs, { cache: 'no-store' });
+  return JSON.parse(await res.text());
+}
+async function _ilpCloudPost(params) {
+  const base = _ilpCloudUrl();
+  if (!base) throw new Error('NO_CLOUD_URL');
+  const res = await fetch(base, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(params)
+  });
+  return JSON.parse(await res.text());
+}
+function _ilpAdminKey() {
+  return sessionStorage.getItem('iloveprint_admin_key') || '';
+}
 
-    async load() {
-      this.cache = await _getAll();
-      this.renderLanding();
-    },
+/* ---------- module manager ---------- */
+const ILP_MODULES = {
+  cache: [],
 
-    renderLanding() {
-      const grid = document.querySelector('.landing-cards-grid');
-      if (!grid) return;
-      grid.querySelectorAll('[data-dynamic-module]').forEach(el => el.remove());
+  async load() {
+    const local = await _getAll();
 
-      this.cache.forEach(m => {
-        const card = document.createElement('div');
-        card.className = 'landing-hub-card';
-        card.setAttribute('data-dynamic-module', m.id);
-        card.innerHTML = `
-          <div>
-            <div class="l-card-top">
-              <div class="l-card-icon" style="background:#f0f9ff;color:#0284c7;">${_esc(m.icon || '🧩')}</div>
-              <span class="l-badge-pill" style="background:#e0f2fe;color:#0369a1;">Custom</span>
-            </div>
-            <h3>${_esc(m.name)}</h3>
-            <p>${_esc(m.description || 'Custom module')}</p>
+    let cloud = [];
+    try {
+      const d = await _ilpCloudGet({ action: 'module_list' });
+      if (d && d.ok && Array.isArray(d.modules)) cloud = d.modules;
+    } catch (e) { /* offline: local only */ }
+
+    const localMap = {};
+    local.forEach(m => { localMap[m.id] = m; });
+
+    /* Cloud list is the source of truth for metadata.
+       Bodies are lazily loaded on first open. */
+    this.cache = cloud.map(c => {
+      const l = localMap[c.id] || {};
+      return {
+        id: c.id,
+        name: c.name,
+        icon: c.icon || '🧩',
+        description: c.description || '',
+        createdAt: c.createdAt || l.createdAt || Date.now(),
+        html: l.html || null,
+        size: c.size || (l.html ? l.html.length : 0),
+        _cloud: true
+      };
+    });
+
+    /* Any purely-local module (created offline) still shows. */
+    local.forEach(l => {
+      if (!this.cache.find(c => c.id === l.id)) {
+        this.cache.push({
+          id: l.id, name: l.name, icon: l.icon, description: l.description,
+          html: l.html, createdAt: l.createdAt, size: l.html ? l.html.length : 0,
+          _cloud: false
+        });
+      }
+    });
+
+    this.renderLanding();
+  },
+
+  renderLanding() {
+    const grid = document.querySelector('.landing-cards-grid');
+    if (!grid) return;
+    grid.querySelectorAll('[data-dynamic-module]').forEach(el => el.remove());
+
+    this.cache.forEach(m => {
+      const card = document.createElement('div');
+      card.className = 'landing-hub-card';
+      card.setAttribute('data-dynamic-module', m.id);
+      card.innerHTML = `
+        <div>
+          <div class="l-card-top">
+            <div class="l-card-icon" style="background:#f0f9ff;color:#0284c7;">${_esc(m.icon || '🧩')}</div>
+            <span class="l-badge-pill" style="background:#e0f2fe;color:#0369a1;">Custom</span>
           </div>
-          <div class="l-card-btn" style="color:#0284c7;">
-            <span>Open Module</span><span>➔</span>
-          </div>`;
-        card.addEventListener('click', () => this.open(m.id));
-        grid.appendChild(card);
-      });
-    },
+          <h3>${_esc(m.name)}</h3>
+          <p>${_esc(m.description || 'Custom module')}</p>
+        </div>
+        <div class="l-card-btn" style="color:#0284c7;">
+          <span>Open Module</span><span>➔</span>
+        </div>`;
+      card.addEventListener('click', () => this.open(m.id));
+      grid.appendChild(card);
+    });
+  },
 
-    open(id) {
-      /* ---- SAME AUTH GATE AS switchSuiteSection ---- */
-      const acc     = JSON.parse(localStorage.getItem('iloveprint_account') || 'null');
-      const adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
-      if (!adminIn) {
-        if (!acc) { window.ILP_AUTH.showRegistration(); return; }
-        if (acc.status !== 'approved') {
-          if (acc.status === 'pending_payment') window.ILP_AUTH.showPaymentModal();
-          else window.ILP_AUTH.showPending();
+  async open(id) {
+    const acc     = JSON.parse(localStorage.getItem('iloveprint_account') || 'null');
+    const adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
+    if (!adminIn) {
+      if (!acc) { window.ILP_AUTH.showRegistration(); return; }
+      if (acc.status !== 'approved') {
+        if (acc.status === 'pending_payment') window.ILP_AUTH.showPaymentModal();
+        else window.ILP_AUTH.showPending();
+        return;
+      }
+      if (acc.expiryDate && Date.now() > acc.expiryDate) {
+        window.ILP_AUTH.showExpired(); return;
+      }
+    }
+
+    const mod = this.cache.find(m => m.id === id);
+    if (!mod) return;
+
+    /* Lazy-fetch full HTML if not cached on this device */
+    if (!mod.html) {
+      try {
+        const d = await _ilpCloudGet({ action: 'module_get', id: id });
+        if (d && d.ok && d.module && d.module.html) {
+          mod.html = d.module.html;
+          /* persist locally for next time */
+          await _put({
+            id: mod.id, name: mod.name, icon: mod.icon,
+            description: mod.description, html: mod.html,
+            createdAt: mod.createdAt
+          });
+        } else {
+          alert('Module content could not be loaded.');
           return;
         }
-        if (acc.expiryDate && Date.now() > acc.expiryDate) {
-          window.ILP_AUTH.showExpired(); return;
-        }
+      } catch (e) {
+        alert('Module not cached on this device and cloud is unreachable.');
+        return;
       }
+    }
 
-      const mod = this.cache.find(m => m.id === id);
-      if (!mod) return;
+    ['landingSection','smartIdSection','passportSection','bgaiSection','cropperSection']
+      .forEach(sid => { const el = document.getElementById(sid); if (el) el.style.display = 'none'; });
+    const tg = document.getElementById('topGuideBar'); if (tg) tg.style.display = 'none';
+    const hb = document.getElementById('topHubReturnBtn'); if (hb) hb.style.display = 'inline-flex';
 
-      ['landingSection','smartIdSection','passportSection','bgaiSection','cropperSection']
-        .forEach(sid => { const el = document.getElementById(sid); if (el) el.style.display = 'none'; });
-      const tg = document.getElementById('topGuideBar'); if (tg) tg.style.display = 'none';
-      const hb = document.getElementById('topHubReturnBtn'); if (hb) hb.style.display = 'inline-flex';
-
-      let section = document.getElementById('dynamicModuleSection');
-      if (!section) {
-        section = document.createElement('section');
-        section.id = 'dynamicModuleSection';
-        section.style.display = 'none';
-        section.innerHTML = `
-          <div class="card no-print" style="margin-bottom:20px;">
-            <div class="top-bar">
-              <div style="display:flex;align-items:center;gap:14px;">
-                <button class="home-nav-btn" id="dynModBackBtn">🏠 Return to Home / Hub</button>
-                <div>
-                  <h2 id="dynModTitle">Module</h2>
-                  <small id="dynModSubtitle">Custom Module</small>
-                </div>
+    let section = document.getElementById('dynamicModuleSection');
+    if (!section) {
+      section = document.createElement('section');
+      section.id = 'dynamicModuleSection';
+      section.style.display = 'none';
+      section.innerHTML = `
+        <div class="card no-print" style="margin-bottom:20px;">
+          <div class="top-bar">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <button class="home-nav-btn" id="dynModBackBtn">🏠 Return to Home / Hub</button>
+              <div>
+                <h2 id="dynModTitle">Module</h2>
+                <small id="dynModSubtitle">Custom Module</small>
               </div>
             </div>
           </div>
-          <div class="card" style="padding:0;overflow:hidden;">
-            <iframe id="dynModFrame"
-                    style="width:100%;height:calc(100vh - 200px);min-height:600px;border:0;display:block;background:#fff;"></iframe>
-          </div>`;
-        const landing = document.getElementById('landingSection');
-        landing.parentNode.insertBefore(section, landing.nextSibling);
-        section.querySelector('#dynModBackBtn').addEventListener('click', () => this.close());
-      }
-
-      document.getElementById('dynModTitle').textContent    = (mod.icon || '🧩') + ' ' + mod.name;
-      document.getElementById('dynModSubtitle').textContent = mod.description || 'Custom Module';
-      document.getElementById('dynModFrame').srcdoc         = mod.html;
-      section.style.display = 'block';
-      document.body.className = 'mode-dynamic';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    },
-
-    close() {
-      const section = document.getElementById('dynamicModuleSection');
-      if (section) section.style.display = 'none';
-      const frame = document.getElementById('dynModFrame');
-      if (frame) frame.srcdoc = '';
-      if (typeof window.switchSuiteSection === 'function') window.switchSuiteSection('landing');
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <iframe id="dynModFrame"
+                  style="width:100%;height:calc(100vh - 200px);min-height:600px;border:0;display:block;background:#fff;"></iframe>
+        </div>`;
+      const landing = document.getElementById('landingSection');
+      landing.parentNode.insertBefore(section, landing.nextSibling);
+      section.querySelector('#dynModBackBtn').addEventListener('click', () => this.close());
     }
-  };
-  window.ILP_MODULES = ILP_MODULES;
 
+    document.getElementById('dynModTitle').textContent    = (mod.icon || '🧩') + ' ' + mod.name;
+    document.getElementById('dynModSubtitle').textContent = mod.description || 'Custom Module';
+    document.getElementById('dynModFrame').srcdoc         = mod.html;
+    section.style.display = 'block';
+    document.body.className = 'mode-dynamic';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+
+  close() {
+    const section = document.getElementById('dynamicModuleSection');
+    if (section) section.style.display = 'none';
+    const frame = document.getElementById('dynModFrame');
+    if (frame) frame.srcdoc = '';
+    if (typeof window.switchSuiteSection === 'function') window.switchSuiteSection('landing');
+  }
+};
+window.ILP_MODULES = ILP_MODULES;
   /* ================================================================
      ADMIN UI INJECTION — adds a "Modules" tab inside existing dash
      ================================================================ */
@@ -6367,13 +6459,47 @@ function json(obj) {
       html,
       createdAt: Date.now()
     };
+        /* 1. Save locally for instant availability on this device */
     await _put(mod);
+
+    /* 2. Push to cloud so every device sees it */
+    let cloudOk = false;
+    try {
+      const key = _ilpAdminKey();
+      if (!key) {
+        alert('⚠️ Module saved locally, but no Admin Key is set. Open 🛡️ Admin → Settings → paste Admin Key, then re-upload this module to sync it across devices.');
+      } else {
+        const d = await _ilpCloudPost({
+          action:      'module_save',
+          adminKey:    key,
+          id:          mod.id,
+          name:        mod.name,
+          icon:        mod.icon,
+          description: mod.description,
+          html:        mod.html
+        });
+        if (d && d.ok) {
+          cloudOk = true;
+        } else {
+          alert('⚠️ Cloud sync failed: ' + ((d && d.msg) || 'unknown error') +
+                '\n\nModule is on this device only.');
+        }
+      }
+    } catch (e) {
+      alert('⚠️ Could not reach the cloud: ' + e.message +
+            '\n\nModule is on this device only.');
+    }
 
     nameEl.value = ''; iconEl.value = ''; descEl.value = ''; fileEl.value = '';
 
     await ILP_MODULES.load();
     renderModulesList();
-    alert('✅ Module "' + name + '" is now live on the landing page.\n\nIt is saved permanently in this browser.');
+
+    if (cloudOk) {
+      alert('✅ Module "' + name + '" is live on the landing page and synced to the cloud.\nEvery device that opens your site will now see it.');
+    } else {
+      alert('✅ Module "' + name + '" is live on the landing page (this device only).');
+    }
   }
 
   function renderModulesList() {
@@ -6413,9 +6539,31 @@ function json(obj) {
         document.getElementById('ilpAdminDash').style.display = 'none';
         ILP_MODULES.open(m.id);
       });
-      card.querySelector('[data-act="delete"]').addEventListener('click', async () => {
-        if (!confirm('Delete module "' + m.name + '"?\n\nThis cannot be undone.')) return;
+            card.querySelector('[data-act="delete"]').addEventListener('click', async () => {
+        if (!confirm('Delete module "' + m.name + '"?\n\nThis cannot be undone and will remove it from every device.')) return;
+
+        /* 1. Delete locally */
         await _del(m.id);
+
+        /* 2. Delete from cloud */
+        try {
+          const key = _ilpAdminKey();
+          if (key) {
+            const d = await _ilpCloudPost({
+              action:   'module_delete',
+              adminKey: key,
+              id:       m.id
+            });
+            if (!d || !d.ok) {
+              alert('⚠️ Removed from this device, but cloud delete returned: ' + ((d && d.msg) || 'no response'));
+            }
+          } else {
+            alert('⚠️ Removed locally only — no Admin Key set, so other devices still see it.');
+          }
+        } catch (e) {
+          alert('⚠️ Removed locally only — cloud unreachable: ' + e.message);
+        }
+
         await ILP_MODULES.load();
         renderModulesList();
       });
