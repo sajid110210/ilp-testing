@@ -7001,30 +7001,41 @@ function json(obj) {
   }
 
   /* Wrap saveSettings so it also pushes to the cloud */
+    /* Wrap saveSettings so it also pushes to the cloud.
+     Reads values directly from the form — zero dependency on ILPSettings. */
   const _origSaveSettings = ILP_ADMIN.saveSettings;
   ILP_ADMIN.saveSettings = async function () {
-    /* 1. Save locally first (original behaviour + alert) */
+    /* 1. Save locally first (original v2 behaviour + alert) */
     _origSaveSettings.apply(this, arguments);
 
-    /* 2. Push to cloud so every device sees it on next page load */
-    if (!cloudUrl()) return;
+    /* 2. Read the values straight from the form fields */
+    const amount   = Math.max(0, parseFloat(document.getElementById('ilpSetAmount').value)   || 0);
+    const planDays = Math.max(1, parseInt(document.getElementById('ilpSetPlanDays').value, 10) || 30);
+    const upiId    = (document.getElementById('ilpSetUpi').value   || '').trim();
+    const payee    = (document.getElementById('ilpSetPayee').value || '').trim() || 'iLovePrint';
+    const qrUrl    = (document.getElementById('ilpSetQrUrl').value || '').trim();
+
+    /* 3. Push to cloud */
+    if (!cloudUrl()) {
+      alert('⚠️ Settings saved on this device, but no Google Apps Script URL is set — other devices will not see this change.\n\nPaste your /exec URL in the "Google Apps Script URL" field above and click Save Settings again.');
+      return;
+    }
     if (!adminKey()) {
       alert('⚠️ Settings saved on this device, but no Admin Key is set — other devices will not see this change.');
       return;
     }
     try {
-      const s = ILPSettings.get();
       const r = await cloud({
         action:   'settings_save',
         adminKey: adminKey(),
-        amount:   s.amount,
-        planDays: s.planDays,
-        upiId:    s.upiId,
-        payee:    s.payee,
-        qrUrl:    s.qrUrl || ''
+        amount:   amount,
+        planDays: planDays,
+        upiId:    upiId,
+        payee:    payee,
+        qrUrl:    qrUrl
       });
       if (r && r.ok) {
-        console.log('[iLovePrint] Settings pushed to cloud.');
+        console.log('[iLovePrint] Settings pushed to cloud:', r.settings);
       } else {
         alert('⚠️ Saved locally, but cloud sync returned: ' + ((r && r.msg) || 'unknown'));
       }
