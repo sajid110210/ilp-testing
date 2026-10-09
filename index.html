@@ -5210,7 +5210,7 @@
       if (i >= 0) {
         list[i].status = status;
         if (status === 'approved') {
-          const s = ILPSettings.get();
+      const s = window.ILP_SETTINGS.get();
           list[i].rechargeDate = Date.now();
           list[i].expiryDate = Date.now() + (s.planDays || 30) * DAY_MS;
           list[i].approvedAt = Date.now();
