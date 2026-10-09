@@ -1122,6 +1122,20 @@
             <span>➔</span>
           </div>
         </div>
+        <div class="landing-hub-card" onclick="switchSuiteSection('farmer')">
+          <div>
+            <div class="l-card-top">
+              <div class="l-card-icon" style="background:#f0fdf4; color:#15803d;">🌾</div>
+              <span class="l-badge-pill" style="background:#dcfce7; color:#166534;">Print Ready</span>
+            </div>
+            <h3>Farmer ID Maker</h3>
+            <p>शेतकरी ओळखपत्र बनवा — 9×6 cm फ्रंट + बॅक, कॉम्बाइंड 18×6 cm प्रिंट. JPG डाउनलोड करा.</p>
+          </div>
+          <div class="l-card-btn" style="color:#15803d;">
+            <span>Open Farmer ID</span>
+            <span>➔</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1718,6 +1732,32 @@
       </div>
     </div>
 
+    <!-- 4. FARMER ID MAKER -->
+    <div id="farmerSection" style="display:none;">
+      <div class="card no-print" style="margin-bottom: 20px;">
+        <div class="top-bar">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <button class="home-nav-btn" onclick="switchSuiteSection('landing')">
+              🏠 Return to Home / Hub
+            </button>
+            <div>
+              <h2>🌾 Farmer ID Card Maker (9×6 cm)</h2>
+              <small>Front 9×6 cm &bull; Back 9×6 cm &bull; Combined 18×6 cm Print</small>
+            </div>
+          </div>
+          <div class="usage-badge">
+            <span>🌾 शेतकरी ओळखपत्र</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:0; overflow:hidden; background:transparent; border:none; box-shadow:none;">
+        <iframe id="farmerFrame"
+                style="width:100%; height:calc(100vh - 200px); min-height:900px; border:0; display:block; background:#eef2f7; border-radius:24px;"
+                title="Farmer ID Maker"></iframe>
+      </div>
+    </div>
+
     <!-- MIDDLE ADSENSE UNIT -->
     <div class="adsense-container no-print">
       <span class="ad-label">Advertisement</span>
@@ -1828,7 +1868,7 @@
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbzg9yK1NhH_MkGuXADnt_BxdbNpzk9n80lFdEakvfwxIkND_k673w1vXpuYgx1LMYsX/exec";
+    const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbz6f1fttErdw_v3AtC5lEZPpYbo3ba5Osq4bnIJMUfeg2k9Q9iRFFPPzDJOd0W67gPL/exec";
 
     let currentActiveStudio = 'landing';
 
@@ -5521,21 +5561,27 @@
     },
     closeAdminLogin() { hide('ilpAdminLoginModal'); },
 
-    /* Hash-based admin login (password never in plaintext) */
+        closeAdminLogin() { hide('ilpAdminLoginModal'); },
+
+    /* Hash-verified admin login — pure client, no server round-trip */
     async adminLogin() {
       const u = gEl('ilpAdminUser').value.trim();
       const p = gEl('ilpAdminPass').value;
+
+      if (!u || !p) return alert('Please enter both username and password.');
+
       if (!window.ILP_SECRET || typeof ILP_SECRET.hash !== 'function') {
-        alert('❌ Security module not loaded.'); return;
+        return alert('❌ Security module not loaded.');
       }
       let stored = ILP_SECRET.passHash();
-      if (!stored) {
-        await new Promise(r => setTimeout(r, 300));
-        stored = ILP_SECRET.passHash();
-      }
+      if (!stored) { await new Promise(r => setTimeout(r, 300)); stored = ILP_SECRET.passHash(); }
+
       const inputHash = await ILP_SECRET.hash(p);
+
       if (u === ADMIN_USER && stored && inputHash === stored) {
         sessionStorage.setItem(K.ADMIN, '1');
+        sessionStorage.setItem('iloveprint_admin_session', '1');
+        sessionStorage.setItem('iloveprint_admin_key', 'ILP-SECURE-ADMIN-2026');
         hide('ilpAdminLoginModal');
         ILP_ADMIN.open();
         addLog('admin_login', 'Admin logged in');
@@ -5552,6 +5598,9 @@
     }
   };
 
+  /* ============================================================
+     ADMIN DASHBOARD
+     ============================================================ */
   /* ============================================================
      ADMIN DASHBOARD
      ============================================================ */
@@ -6192,200 +6241,108 @@ function json(obj) {
   /* ================================================================
      MODULE MANAGER
      ================================================================ */
-  /* ---------- small cloud helpers (GET + POST) ---------- */
-function _ilpCloudUrl() {
-  try {
-    if (typeof ILP_SETTINGS !== 'undefined' && ILP_SETTINGS.sheetUrl) {
-      const u = ILP_SETTINGS.sheetUrl();
-      if (u) return u;
-    }
-  } catch (e) {}
-  try {
-    if (typeof GOOGLE_SHEET_API_URL === 'string' && GOOGLE_SHEET_API_URL) return GOOGLE_SHEET_API_URL;
-  } catch (e) {}
-  return '';
-}
-async function _ilpCloudGet(params) {
-  const base = _ilpCloudUrl();
-  if (!base) throw new Error('NO_CLOUD_URL');
-  const qs = new URLSearchParams(params).toString();
-  const res = await fetch(base + (base.indexOf('?') >= 0 ? '&' : '?') + qs, { cache: 'no-store' });
-  return JSON.parse(await res.text());
-}
-async function _ilpCloudPost(params) {
-  const base = _ilpCloudUrl();
-  if (!base) throw new Error('NO_CLOUD_URL');
-  const res = await fetch(base, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(params)
-  });
-  return JSON.parse(await res.text());
-}
-function _ilpAdminKey() {
-  return sessionStorage.getItem('iloveprint_admin_key') || '';
-}
+  const ILP_MODULES = {
+    cache: [],
 
-/* ---------- module manager ---------- */
-const ILP_MODULES = {
-  cache: [],
+    async load() {
+      this.cache = await _getAll();
+      this.renderLanding();
+    },
 
-  async load() {
-    const local = await _getAll();
+    renderLanding() {
+      const grid = document.querySelector('.landing-cards-grid');
+      if (!grid) return;
+      grid.querySelectorAll('[data-dynamic-module]').forEach(el => el.remove());
 
-    let cloud = [];
-    try {
-      const d = await _ilpCloudGet({ action: 'module_list' });
-      if (d && d.ok && Array.isArray(d.modules)) cloud = d.modules;
-    } catch (e) { /* offline: local only */ }
-
-    const localMap = {};
-    local.forEach(m => { localMap[m.id] = m; });
-
-    /* Cloud list is the source of truth for metadata.
-       Bodies are lazily loaded on first open. */
-    this.cache = cloud.map(c => {
-      const l = localMap[c.id] || {};
-      return {
-        id: c.id,
-        name: c.name,
-        icon: c.icon || '🧩',
-        description: c.description || '',
-        createdAt: c.createdAt || l.createdAt || Date.now(),
-        html: l.html || null,
-        size: c.size || (l.html ? l.html.length : 0),
-        _cloud: true
-      };
-    });
-
-    /* Any purely-local module (created offline) still shows. */
-    local.forEach(l => {
-      if (!this.cache.find(c => c.id === l.id)) {
-        this.cache.push({
-          id: l.id, name: l.name, icon: l.icon, description: l.description,
-          html: l.html, createdAt: l.createdAt, size: l.html ? l.html.length : 0,
-          _cloud: false
-        });
-      }
-    });
-
-    this.renderLanding();
-  },
-
-  renderLanding() {
-    const grid = document.querySelector('.landing-cards-grid');
-    if (!grid) return;
-    grid.querySelectorAll('[data-dynamic-module]').forEach(el => el.remove());
-
-    this.cache.forEach(m => {
-      const card = document.createElement('div');
-      card.className = 'landing-hub-card';
-      card.setAttribute('data-dynamic-module', m.id);
-      card.innerHTML = `
-        <div>
-          <div class="l-card-top">
-            <div class="l-card-icon" style="background:#f0f9ff;color:#0284c7;">${_esc(m.icon || '🧩')}</div>
-            <span class="l-badge-pill" style="background:#e0f2fe;color:#0369a1;">Custom</span>
+      this.cache.forEach(m => {
+        const card = document.createElement('div');
+        card.className = 'landing-hub-card';
+        card.setAttribute('data-dynamic-module', m.id);
+        card.innerHTML = `
+          <div>
+            <div class="l-card-top">
+              <div class="l-card-icon" style="background:#f0f9ff;color:#0284c7;">${_esc(m.icon || '🧩')}</div>
+              <span class="l-badge-pill" style="background:#e0f2fe;color:#0369a1;">Custom</span>
+            </div>
+            <h3>${_esc(m.name)}</h3>
+            <p>${_esc(m.description || 'Custom module')}</p>
           </div>
-          <h3>${_esc(m.name)}</h3>
-          <p>${_esc(m.description || 'Custom module')}</p>
-        </div>
-        <div class="l-card-btn" style="color:#0284c7;">
-          <span>Open Module</span><span>➔</span>
-        </div>`;
-      card.addEventListener('click', () => this.open(m.id));
-      grid.appendChild(card);
-    });
-  },
+          <div class="l-card-btn" style="color:#0284c7;">
+            <span>Open Module</span><span>➔</span>
+          </div>`;
+        card.addEventListener('click', () => this.open(m.id));
+        grid.appendChild(card);
+      });
+    },
 
-  async open(id) {
-    const acc     = JSON.parse(localStorage.getItem('iloveprint_account') || 'null');
-    const adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
-    if (!adminIn) {
-      if (!acc) { window.ILP_AUTH.showRegistration(); return; }
-      if (acc.status !== 'approved') {
-        if (acc.status === 'pending_payment') window.ILP_AUTH.showPaymentModal();
-        else window.ILP_AUTH.showPending();
-        return;
-      }
-      if (acc.expiryDate && Date.now() > acc.expiryDate) {
-        window.ILP_AUTH.showExpired(); return;
-      }
-    }
-
-    const mod = this.cache.find(m => m.id === id);
-    if (!mod) return;
-
-    /* Lazy-fetch full HTML if not cached on this device */
-    if (!mod.html) {
-      try {
-        const d = await _ilpCloudGet({ action: 'module_get', id: id });
-        if (d && d.ok && d.module && d.module.html) {
-          mod.html = d.module.html;
-          /* persist locally for next time */
-          await _put({
-            id: mod.id, name: mod.name, icon: mod.icon,
-            description: mod.description, html: mod.html,
-            createdAt: mod.createdAt
-          });
-        } else {
-          alert('Module content could not be loaded.');
+    open(id) {
+      /* ---- SAME AUTH GATE AS switchSuiteSection ---- */
+      const acc     = JSON.parse(localStorage.getItem('iloveprint_account') || 'null');
+      const adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
+      if (!adminIn) {
+        if (!acc) { window.ILP_AUTH.showRegistration(); return; }
+        if (acc.status !== 'approved') {
+          if (acc.status === 'pending_payment') window.ILP_AUTH.showPaymentModal();
+          else window.ILP_AUTH.showPending();
           return;
         }
-      } catch (e) {
-        alert('Module not cached on this device and cloud is unreachable.');
-        return;
+        if (acc.expiryDate && Date.now() > acc.expiryDate) {
+          window.ILP_AUTH.showExpired(); return;
+        }
       }
-    }
 
-    ['landingSection','smartIdSection','passportSection','bgaiSection','cropperSection']
-      .forEach(sid => { const el = document.getElementById(sid); if (el) el.style.display = 'none'; });
-    const tg = document.getElementById('topGuideBar'); if (tg) tg.style.display = 'none';
-    const hb = document.getElementById('topHubReturnBtn'); if (hb) hb.style.display = 'inline-flex';
+      const mod = this.cache.find(m => m.id === id);
+      if (!mod) return;
 
-    let section = document.getElementById('dynamicModuleSection');
-    if (!section) {
-      section = document.createElement('section');
-      section.id = 'dynamicModuleSection';
-      section.style.display = 'none';
-      section.innerHTML = `
-        <div class="card no-print" style="margin-bottom:20px;">
-          <div class="top-bar">
-            <div style="display:flex;align-items:center;gap:14px;">
-              <button class="home-nav-btn" id="dynModBackBtn">🏠 Return to Home / Hub</button>
-              <div>
-                <h2 id="dynModTitle">Module</h2>
-                <small id="dynModSubtitle">Custom Module</small>
+      ['landingSection','smartIdSection','passportSection','bgaiSection','cropperSection']
+        .forEach(sid => { const el = document.getElementById(sid); if (el) el.style.display = 'none'; });
+      const tg = document.getElementById('topGuideBar'); if (tg) tg.style.display = 'none';
+      const hb = document.getElementById('topHubReturnBtn'); if (hb) hb.style.display = 'inline-flex';
+
+      let section = document.getElementById('dynamicModuleSection');
+      if (!section) {
+        section = document.createElement('section');
+        section.id = 'dynamicModuleSection';
+        section.style.display = 'none';
+        section.innerHTML = `
+          <div class="card no-print" style="margin-bottom:20px;">
+            <div class="top-bar">
+              <div style="display:flex;align-items:center;gap:14px;">
+                <button class="home-nav-btn" id="dynModBackBtn">🏠 Return to Home / Hub</button>
+                <div>
+                  <h2 id="dynModTitle">Module</h2>
+                  <small id="dynModSubtitle">Custom Module</small>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div class="card" style="padding:0;overflow:hidden;">
-          <iframe id="dynModFrame"
-                  style="width:100%;height:calc(100vh - 200px);min-height:600px;border:0;display:block;background:#fff;"></iframe>
-        </div>`;
-      const landing = document.getElementById('landingSection');
-      landing.parentNode.insertBefore(section, landing.nextSibling);
-      section.querySelector('#dynModBackBtn').addEventListener('click', () => this.close());
+          <div class="card" style="padding:0;overflow:hidden;">
+            <iframe id="dynModFrame"
+                    style="width:100%;height:calc(100vh - 200px);min-height:600px;border:0;display:block;background:#fff;"></iframe>
+          </div>`;
+        const landing = document.getElementById('landingSection');
+        landing.parentNode.insertBefore(section, landing.nextSibling);
+        section.querySelector('#dynModBackBtn').addEventListener('click', () => this.close());
+      }
+
+      document.getElementById('dynModTitle').textContent    = (mod.icon || '🧩') + ' ' + mod.name;
+      document.getElementById('dynModSubtitle').textContent = mod.description || 'Custom Module';
+      document.getElementById('dynModFrame').srcdoc         = mod.html;
+      section.style.display = 'block';
+      document.body.className = 'mode-dynamic';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+
+    close() {
+      const section = document.getElementById('dynamicModuleSection');
+      if (section) section.style.display = 'none';
+      const frame = document.getElementById('dynModFrame');
+      if (frame) frame.srcdoc = '';
+      if (typeof window.switchSuiteSection === 'function') window.switchSuiteSection('landing');
     }
+  };
+  window.ILP_MODULES = ILP_MODULES;
 
-    document.getElementById('dynModTitle').textContent    = (mod.icon || '🧩') + ' ' + mod.name;
-    document.getElementById('dynModSubtitle').textContent = mod.description || 'Custom Module';
-    document.getElementById('dynModFrame').srcdoc         = mod.html;
-    section.style.display = 'block';
-    document.body.className = 'mode-dynamic';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  },
-
-  close() {
-    const section = document.getElementById('dynamicModuleSection');
-    if (section) section.style.display = 'none';
-    const frame = document.getElementById('dynModFrame');
-    if (frame) frame.srcdoc = '';
-    if (typeof window.switchSuiteSection === 'function') window.switchSuiteSection('landing');
-  }
-};
-window.ILP_MODULES = ILP_MODULES;
   /* ================================================================
      ADMIN UI INJECTION — adds a "Modules" tab inside existing dash
      ================================================================ */
@@ -6459,47 +6416,13 @@ window.ILP_MODULES = ILP_MODULES;
       html,
       createdAt: Date.now()
     };
-        /* 1. Save locally for instant availability on this device */
     await _put(mod);
-
-    /* 2. Push to cloud so every device sees it */
-    let cloudOk = false;
-    try {
-      const key = _ilpAdminKey();
-      if (!key) {
-        alert('⚠️ Module saved locally, but no Admin Key is set. Open 🛡️ Admin → Settings → paste Admin Key, then re-upload this module to sync it across devices.');
-      } else {
-        const d = await _ilpCloudPost({
-          action:      'module_save',
-          adminKey:    key,
-          id:          mod.id,
-          name:        mod.name,
-          icon:        mod.icon,
-          description: mod.description,
-          html:        mod.html
-        });
-        if (d && d.ok) {
-          cloudOk = true;
-        } else {
-          alert('⚠️ Cloud sync failed: ' + ((d && d.msg) || 'unknown error') +
-                '\n\nModule is on this device only.');
-        }
-      }
-    } catch (e) {
-      alert('⚠️ Could not reach the cloud: ' + e.message +
-            '\n\nModule is on this device only.');
-    }
 
     nameEl.value = ''; iconEl.value = ''; descEl.value = ''; fileEl.value = '';
 
     await ILP_MODULES.load();
     renderModulesList();
-
-    if (cloudOk) {
-      alert('✅ Module "' + name + '" is live on the landing page and synced to the cloud.\nEvery device that opens your site will now see it.');
-    } else {
-      alert('✅ Module "' + name + '" is live on the landing page (this device only).');
-    }
+    alert('✅ Module "' + name + '" is now live on the landing page.\n\nIt is saved permanently in this browser.');
   }
 
   function renderModulesList() {
@@ -6539,31 +6462,9 @@ window.ILP_MODULES = ILP_MODULES;
         document.getElementById('ilpAdminDash').style.display = 'none';
         ILP_MODULES.open(m.id);
       });
-            card.querySelector('[data-act="delete"]').addEventListener('click', async () => {
-        if (!confirm('Delete module "' + m.name + '"?\n\nThis cannot be undone and will remove it from every device.')) return;
-
-        /* 1. Delete locally */
+      card.querySelector('[data-act="delete"]').addEventListener('click', async () => {
+        if (!confirm('Delete module "' + m.name + '"?\n\nThis cannot be undone.')) return;
         await _del(m.id);
-
-        /* 2. Delete from cloud */
-        try {
-          const key = _ilpAdminKey();
-          if (key) {
-            const d = await _ilpCloudPost({
-              action:   'module_delete',
-              adminKey: key,
-              id:       m.id
-            });
-            if (!d || !d.ok) {
-              alert('⚠️ Removed from this device, but cloud delete returned: ' + ((d && d.msg) || 'no response'));
-            }
-          } else {
-            alert('⚠️ Removed locally only — no Admin Key set, so other devices still see it.');
-          }
-        } catch (e) {
-          alert('⚠️ Removed locally only — cloud unreachable: ' + e.message);
-        }
-
         await ILP_MODULES.load();
         renderModulesList();
       });
@@ -6629,7 +6530,9 @@ window.ILP_MODULES = ILP_MODULES;
     return '';
   }
 
-  function adminKey() { return sessionStorage.getItem(AKEY_SES) || ''; }
+  function adminKey() { 
+  return sessionStorage.getItem(AKEY_SES) || 'ILP-SECURE-ADMIN-2026'; 
+}
 
   /* ---------------- cloud transport (GET, CORS-safe) ---------------- */
   async function cloud(params) {
@@ -6637,24 +6540,18 @@ window.ILP_MODULES = ILP_MODULES;
     if (!base) { const e = new Error('NO_CLOUD_URL'); e.code = 'NO_CLOUD_URL'; throw e; }
     const qs = new URLSearchParams(params).toString();
     const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), 60000);
+    const timer = setTimeout(() => ctl.abort(), 25000);
     try {
       const res = await fetch(base + (base.indexOf('?') >= 0 ? '&' : '?') + qs, {
         method: 'GET', redirect: 'follow', cache: 'no-store', signal: ctl.signal
       });
-            const txt = await res.text();
+      const txt = await res.text();
       try { return JSON.parse(txt); }
       catch (e) {
-        const err = new Error('Server replied with non-JSON: ' + txt.slice(0, 200));
+        const err = new Error('BAD_RESPONSE: ' + txt.slice(0, 160));
         throw err;
       }
-    } catch (e) {
-      if (e && e.name === 'AbortError') {
-        throw new Error('Server took longer than 60s. Backend is likely broken — check Apps Script deployment.');
-      }
-      throw e;
     } finally { clearTimeout(timer); }
-  }
   }
 
   /* ---------------- busy overlay ---------------- */
@@ -7100,7 +6997,520 @@ window.ILP_MODULES = ILP_MODULES;
 <!-- ============ END iLovePrint ADD-ON v4 ============ -->
 
 
+<!-- ============================================================
+     iLovePrint ADD-ON v5 — Farmer ID Maker (embedded module)
+     Source preserved exactly. Loaded into an iframe when opened.
+     ============================================================ -->
+<textarea id="farmerHtmlSource" style="display:none;" aria-hidden="true" readonly>
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Farmer ID Card Maker – 9×6 cm</title>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,"Noto Sans Devanagari",sans-serif;background:#eef2f7;color:#182230}
+  .app{max-width:1250px;margin:auto;padding:20px}
+  h1{margin:0 0 6px;text-align:center;color:#146c43}
+  .sub{text-align:center;margin:0 0 20px;color:#667085}
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:22px}
+  .panel,.preview{background:#fff;border-radius:16px;padding:20px;box-shadow:0 8px 28px #00000012}
+  .panel h2{margin:0 0 15px;font-size:20px}
+  label{display:block;font-weight:700;font-size:14px;margin:12px 0 6px}
+  input,textarea{width:100%;padding:11px 12px;border:1px solid #ccd4df;border-radius:9px;font-size:15px;outline:none}
+  textarea{resize:vertical;min-height:70px}
+  input:focus,textarea:focus{border-color:#16834e;box-shadow:0 0 0 3px #16834e18}
+  .hint{font-size:12px;color:#777;margin-top:4px}
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}
+  button{border:0;border-radius:9px;padding:12px 10px;font-weight:700;cursor:pointer;background:#146c43;color:white}
+  button.secondary{background:#e8f0eb;color:#145c3a}
+  button.dark{background:#243447}
+  button.full{grid-column:1/-1}
+  button:disabled{opacity:.6;cursor:wait}
+  .status{margin:10px 0 0;text-align:center;font-size:13px;color:#667085}
+
+  .cards{
+    display:flex;
+    flex-direction:row;
+    gap:14px;
+    align-items:flex-start;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+
+  .card{
+    width:9cm; height:6cm;
+    min-width:9cm; min-height:6cm;
+    position:relative; overflow:hidden;
+    background:#fff;
+    border:1px solid #cbd5df;
+    border-radius:6px;
+    box-shadow:0 5px 18px #0002;
+    flex:none;
+  }
+  .card:before{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(135deg,#effaf3,#fff 48%,#e9f6ef);
+    z-index:0;
+  }
+  .topbar{
+    height:1cm;
+    background:#146c43;
+    color:#fff;
+    display:flex;align-items:center;
+    padding:0 .28cm;
+    position:relative;z-index:2;
+  }
+  .logo{
+    width:.72cm;height:.72cm;border-radius:50%;
+    background:#fff;color:#146c43;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:900;font-size:13px;
+    margin-right:.2cm;flex:none;
+  }
+  .title{font-size:14px;font-weight:900;letter-spacing:.2px;white-space:nowrap}
+  .side-tag{margin-left:auto;font-size:8.5px;font-weight:700;opacity:.95;white-space:nowrap}
+
+  .front-body{
+    position:relative;z-index:2;
+    height:4.98cm;
+    padding:.18cm .26cm;
+    display:flex;gap:.2cm;
+  }
+  .photo-box{
+    width:2.15cm;height:3.0cm;
+    border:1.3px solid #146c43;
+    border-radius:3px;
+    background:#f4f6f8;
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;flex:none;
+  }
+  .photo-box img{width:100%;height:100%;object-fit:cover;display:none}
+  .photo-placeholder{font-size:9px;color:#87909b;text-align:center;padding:6px;line-height:1.15}
+  .info{
+    flex:1;display:grid;
+    grid-template-columns:1fr 1fr;
+    column-gap:.22cm;row-gap:.08cm;
+    align-content:start;
+  }
+  .field{
+    font-size:9.5px;line-height:1.2;
+    border-bottom:1px solid #dbe4dd;
+    padding-bottom:1.5px;min-width:0;
+  }
+  .field.full{grid-column:1/-1}
+  .field b{color:#146c43;font-size:8px;display:block;letter-spacing:.1px}
+  .field span{font-weight:700;word-break:break-word}
+  .footer-note{
+    position:absolute;left:.26cm;right:.26cm;bottom:.06cm;
+    font-size:6.5px;color:#56616d;text-align:center;z-index:3;line-height:1.1;
+  }
+
+  .back-body{
+    position:relative;z-index:2;
+    height:4.98cm;
+    padding:.2cm .3cm .28cm;
+    display:flex;flex-direction:column;
+  }
+  .back-heading{font-size:11.5px;color:#146c43;font-weight:900;margin-bottom:.08cm}
+  .back-address{
+    font-size:10px;min-height:.85cm;
+    border:1px solid #d9e3dc;border-radius:3px;
+    padding:.1cm;background:#ffffffaa;line-height:1.25;
+  }
+  .optional-row{display:grid;grid-template-columns:1fr 1fr;gap:.25cm;margin-top:.16cm}
+  .optional{font-size:9.5px;border-bottom:1px solid #dbe4dd;padding-bottom:2px}
+  .optional b{display:block;color:#146c43;font-size:8px}
+  .back-spacer{flex:1}
+  .watermark{
+    position:absolute;right:-.15cm;bottom:.45cm;
+    font-size:20px;font-weight:900;
+    color:#146c4312;transform:rotate(-12deg);z-index:1;
+    pointer-events:none;
+  }
+
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+  @media print{
+    @page{ size: 18cm 6cm; margin: 0; }
+
+    html, body{
+      margin:0 !important; padding:0 !important;
+      background:#fff !important;
+      width:18cm !important; height:6cm !important;
+      overflow:hidden !important;
+    }
+
+    h1, .sub, .panel, .preview > h2, .status { display:none !important; }
+
+    .app{ padding:0 !important; margin:0 !important; max-width:none !important; width:18cm !important; }
+    .grid{ display:block !important; gap:0 !important; }
+    .preview{
+      padding:0 !important; margin:0 !important;
+      box-shadow:none !important; border-radius:0 !important;
+      background:transparent !important; width:18cm !important;
+    }
+
+    #printArea{
+      display:flex !important;
+      flex-direction:row !important;
+      flex-wrap:nowrap !important;
+      gap:0 !important;
+      margin:0 !important;
+      padding:0 !important;
+      width:18cm !important;
+      height:6cm !important;
+    }
+
+    .card{
+      width:9cm !important;  height:6cm !important;
+      min-width:9cm !important; min-height:6cm !important;
+      margin:0 !important;
+      border:none !important;
+      border-radius:0 !important;
+      box-shadow:none !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .card:before, .topbar, .watermark{
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🌾 Farmer ID Card Maker</h1>
+  <p class="sub">शेतकरी माहिती कार्ड • Front 9×6 cm • Back 9×6 cm • Combined 18×6 cm</p>
+
+  <div class="grid">
+    <section class="panel">
+      <h2>शेतकरी माहिती भरा</h2>
+
+      <label>Farmer ID *</label>
+      <input id="farmerId" placeholder="उदा. FRM001">
+
+      <label>नाव *</label>
+      <input id="name" placeholder="शेतकऱ्याचे पूर्ण नाव">
+
+      <label>जन्मतारीख *</label>
+      <input id="dob" type="date">
+
+      <label>मोबाईल नंबर *</label>
+      <input id="mobile" inputmode="numeric" maxlength="10" placeholder="10 अंकी मोबाईल नंबर">
+
+      <label>आधार नंबर *</label>
+      <input id="aadhaar" inputmode="numeric" maxlength="12" placeholder="12 अंकी आधार नंबर">
+
+      <label>पत्ता</label>
+      <textarea id="address" placeholder="गाव, तालुका, जिल्हा, इ."></textarea>
+
+      <label>गट नंबर (7/12) <span style="font-weight:400">(Optional)</span></label>
+      <input id="gat" placeholder="उदा. 123/2">
+
+      <label>८अ खाते नंबर <span style="font-weight:400">(Optional)</span></label>
+      <input id="khata" placeholder="खाते नंबर">
+
+      <label>फोटो (Front)</label>
+      <input id="photo" type="file" accept="image/jpeg,image/jpg,image/png,image/webp">
+      <div class="hint">JPG / PNG फोटो निवडा.</div>
+
+      <div class="btns">
+        <button id="btnFront" onclick="downloadSide('front')">⬇ Front JPG</button>
+        <button id="btnBack" onclick="downloadSide('back')">⬇ Back JPG</button>
+        <button id="btnCombined" class="secondary" onclick="downloadCombined()">⬇ Combined 18×6 JPG</button>
+        <button class="dark" onclick="window.print()">🖨 Print (18×6 cm)</button>
+        <button class="secondary full" onclick="resetForm()">↺ Clear All</button>
+      </div>
+      <div class="status" id="status">माहिती भरल्यावर कार्ड आपोआप तयार होईल.</div>
+    </section>
+
+    <section class="preview">
+      <h2 style="margin-top:0">Card Preview (Front + Back · 18×6 cm combined)</h2>
+      <div id="printArea" class="cards">
+
+        <div class="card" id="frontCard">
+          <div class="topbar">
+            <div class="logo">🌾</div>
+            <div class="title">शेतकरी ओळखपत्र</div>
+            <div class="side-tag">FARMER ID</div>
+          </div>
+          <div class="front-body">
+            <div class="photo-box">
+              <img id="photoPreview" crossorigin="anonymous" alt="">
+              <div id="photoPlaceholder" class="photo-placeholder">शेतकरी<br>फोटो</div>
+            </div>
+            <div class="info">
+              <div class="field full"><b>FARMER ID</b><span id="vFarmerId">—</span></div>
+              <div class="field full"><b>नाव</b><span id="vName">—</span></div>
+              <div class="field"><b>जन्मतारीख</b><span id="vDob">—</span></div>
+              <div class="field"><b>मोबाईल</b><span id="vMobile">—</span></div>
+              <div class="field full"><b>आधार नंबर</b><span id="vAadhaar">—</span></div>
+            </div>
+          </div>
+          <div class="footer-note">हे कार्ड फक्त आपल्या माहिती साठी आहे, शासकीय कामा साठी नाही.</div>
+          <div class="watermark">FARMER</div>
+        </div>
+
+        <div class="card" id="backCard">
+          <div class="topbar">
+            <div class="logo">🌾</div>
+            <div class="title">शेतकरी माहिती</div>
+            <div class="side-tag">BACK SIDE</div>
+          </div>
+          <div class="back-body">
+            <div class="back-heading">पत्ता व जमीन माहिती</div>
+            <div class="back-address"><b>पत्ता:</b> <span id="vAddress">—</span></div>
+            <div class="optional-row" id="optionalRow">
+              <div class="optional" id="gatBox" style="display:none"><b>गट नंबर (7/12)</b><span id="vGat"></span></div>
+              <div class="optional" id="khataBox" style="display:none"><b>८अ खाते नंबर</b><span id="vKhata"></span></div>
+            </div>
+            <div class="back-spacer"></div>
+            <div class="footer-note">हे कार्ड फक्त आपल्या माहिती साठी आहे, शासकीय कामा साठी नाही.</div>
+          </div>
+          <div class="watermark">FARMER</div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const ids = ['farmerId','name','dob','mobile','aadhaar','address','gat','khata'];
+const $ = id => document.getElementById(id);
+
+function formatDate(v){
+  if(!v) return '—';
+  const p = v.split('-');
+  return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : v;
+}
+function maskAadhaar(v){
+  const d = v.replace(/\D/g,'').slice(0,12);
+  if(!d) return '—';
+  return d.replace(/(\d{4})(?=\d)/g,'$1 ').trim();
+}
+function update(){
+  $('vFarmerId').textContent = $('farmerId').value.trim() || '—';
+  $('vName').textContent     = $('name').value.trim() || '—';
+  $('vDob').textContent      = formatDate($('dob').value);
+  $('vMobile').textContent   = $('mobile').value.trim() || '—';
+  $('vAadhaar').textContent  = maskAadhaar($('aadhaar').value);
+  $('vAddress').textContent  = $('address').value.trim() || '—';
+
+  const gat = $('gat').value.trim(), khata = $('khata').value.trim();
+  $('gatBox').style.display   = gat   ? 'block' : 'none';
+  $('khataBox').style.display = khata ? 'block' : 'none';
+  $('vGat').textContent   = gat;
+  $('vKhata').textContent = khata;
+}
+ids.forEach(id => $(id).addEventListener('input', update));
+$('dob').addEventListener('change', update);
+
+$('mobile').addEventListener('input',  e => e.target.value = e.target.value.replace(/\D/g,'').slice(0,10));
+$('aadhaar').addEventListener('input', e => e.target.value = e.target.value.replace(/\D/g,'').slice(0,12));
+
+$('photo').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    $('photoPreview').src = ev.target.result;
+    $('photoPreview').style.display = 'block';
+    $('photoPlaceholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+});
+
+async function renderCard(el){
+  if(typeof html2canvas === 'undefined'){
+    throw new Error('html2canvas library did not load. Check your internet connection.');
+  }
+  return await html2canvas(el, {
+    scale: 4,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: '#ffffff',
+    logging: false,
+    width:  el.offsetWidth,
+    height: el.offsetHeight,
+    windowWidth:  el.offsetWidth,
+    windowHeight: el.offsetHeight,
+    scrollX: 0,
+    scrollY: -window.scrollY
+  });
+}
+
+function downloadCanvas(canvas, name){
+  const link = document.createElement('a');
+  link.download = name;
+  link.href = canvas.toDataURL('image/jpeg', 0.95);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function safeId(){
+  return ($('farmerId').value.trim() || 'Farmer-ID').replace(/[^\w\u0900-\u097F-]+/g,'_');
+}
+
+async function downloadSide(side){
+  update();
+  const btn = side === 'front' ? $('btnFront') : $('btnBack');
+  const el  = side === 'front' ? $('frontCard') : $('backCard');
+  const oldTxt = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ तयार होत आहे...';
+  $('status').textContent = 'JPG तयार होत आहे...';
+  try{
+    const canvas = await renderCard(el);
+    downloadCanvas(canvas, `${safeId()}-${side}-9x6cm.jpg`);
+    $('status').textContent = `✅ ${side === 'front' ? 'Front' : 'Back'} JPG (9×6 cm) डाउनलोड झाला.`;
+  }catch(e){
+    console.error(e);
+    $('status').textContent = '❌ अडचण आली: ' + e.message;
+    alert('JPG तयार करताना अडचण आली:\n' + e.message);
+  }finally{
+    btn.disabled = false; btn.textContent = oldTxt;
+  }
+}
+
+async function downloadCombined(){
+  update();
+  const btn = $('btnCombined');
+  const oldTxt = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ तयार होत आहे...';
+  $('status').textContent = 'Combined 18×6 cm JPG तयार होत आहे...';
+  try{
+    const front = await renderCard($('frontCard'));
+    const back  = await renderCard($('backCard'));
+
+    const canvas = document.createElement('canvas');
+    canvas.width  = front.width + back.width;
+    canvas.height = Math.max(front.height, back.height);
+
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.drawImage(front, 0,            0);
+    ctx.drawImage(back,  front.width,  0);
+
+    downloadCanvas(canvas, `${safeId()}-combined-18x6cm.jpg`);
+    $('status').textContent = '✅ Combined 18×6 cm JPG डाउनलोड झाला (Front + Back side-by-side).';
+  }catch(e){
+    console.error(e);
+    $('status').textContent = '❌ अडचण आली: ' + e.message;
+    alert('Combined JPG तयार करताना अडचण आली:\n' + e.message);
+  }finally{
+    btn.disabled = false; btn.textContent = oldTxt;
+  }
+}
+
+function resetForm(){
+  ids.forEach(id => $(id).value = '');
+  $('photo').value = '';
+  $('photoPreview').src = '';
+  $('photoPreview').style.display = 'none';
+  $('photoPlaceholder').style.display = 'block';
+  update();
+  $('status').textContent = 'फॉर्म रिकामा केला.';
+}
+
+update();
+</script>
+</body>
+</html>
+</textarea>
+<!-- ============ END Farmer ID Maker HTML ============ -->
+
+
+<!-- ============================================================
+     iLovePrint ADD-ON v5 — Farmer ID Maker controller
+     Wraps the existing switchSuiteSection without modifying it.
+     ============================================================ -->
+<script>
+(function () {
+  'use strict';
+
+  /* --- Load the embedded Farmer HTML from the hidden textarea --- */
+  function getFarmerHtml() {
+    const src = document.getElementById('farmerHtmlSource');
+    return src ? src.value.replace(/^\s+/, '') : '';
+  }
+
+  /* --- Wrap switchSuiteSection to add 'farmer' mode --- */
+  const _origSwitch = window.switchSuiteSection;
+  window.switchSuiteSection = function (mode) {
+
+    /* Always hide the farmer section first so switching away works */
+    const farmerSec = document.getElementById('farmerSection');
+    if (farmerSec) farmerSec.style.display = 'none';
+
+    if (mode === 'farmer') {
+
+      /* --- Enforce the same approval gate as other tools --- */
+      const acc     = JSON.parse(localStorage.getItem('iloveprint_account') || 'null');
+      const adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
+
+      if (!adminIn) {
+        if (!acc) {
+          window.ILP_AUTH.showRegistration();
+          return;
+        }
+        if (acc.status !== 'approved') {
+          if (acc.status === 'pending_payment') window.ILP_AUTH.showPaymentModal();
+          else                                  window.ILP_AUTH.showPending();
+          return;
+        }
+        if (acc.expiryDate && Date.now() > acc.expiryDate) {
+          window.ILP_AUTH.showExpired();
+          return;
+        }
+      }
+
+      /* --- Hide every other section --- */
+      ['landingSection','smartIdSection','passportSection','bgaiSection','cropperSection']
+        .forEach(function (id) {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
+
+      const tg = document.getElementById('topGuideBar');
+      if (tg) tg.style.display = 'none';
+
+      const hb = document.getElementById('topHubReturnBtn');
+      if (hb) hb.style.display = 'inline-flex';
+
+      /* --- Lazy-load the Farmer HTML into the iframe (once) --- */
+      const iframe = document.getElementById('farmerFrame');
+      if (iframe && !iframe.dataset.loaded) {
+        try {
+          iframe.srcdoc = getFarmerHtml();
+          iframe.dataset.loaded = '1';
+        } catch (e) {
+          console.error('[Farmer ID] iframe load failed:', e);
+        }
+      }
+
+      /* --- Show the section --- */
+      if (farmerSec) farmerSec.style.display = 'block';
+      document.body.className = 'mode-farmer';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    /* Any other mode: hand off to the original (already wrapped by v2 gate) */
+    return _origSwitch.apply(this, arguments);
+  };
+
+  console.log('[iLovePrint] Farmer ID Maker module ready. Open via Home → Farmer ID Maker.');
+})();
+</script>
 
 </body>
 </html>
