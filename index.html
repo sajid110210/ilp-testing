@@ -6982,16 +6982,68 @@ function json(obj) {
     if (!confirm('Delete user ' + mobile + ' from the cloud?\nThis cannot be undone.')) return;
     return adminCall('admin_delete', { mobile }, 'Deleting…');
   };
+  /* ================================================================
+     SETTINGS SYNC — pull on load, push on admin save
+     ================================================================ */
 
+  /* Fetch settings from the cloud and merge into local storage */
+  async function loadSettingsFromCloud() {
+    if (!cloudUrl()) return;
+    try {
+      const r = await cloud({ action: 'settings_get' });
+      if (r && r.ok && r.settings && Object.keys(r.settings).length) {
+        const cur = LS.get(SET_KEY, {});
+        const merged = Object.assign({}, cur, r.settings);
+        LS.set(SET_KEY, merged);
+        console.log('[iLovePrint] Cloud settings loaded:', merged);
+      }
+    } catch (e) { /* silent — offline or unreachable */ }
+  }
+
+  /* Wrap saveSettings so it also pushes to the cloud */
+  const _origSaveSettings = ILP_ADMIN.saveSettings;
+  ILP_ADMIN.saveSettings = async function () {
+    /* 1. Save locally first (original behaviour + alert) */
+    _origSaveSettings.apply(this, arguments);
+
+    /* 2. Push to cloud so every device sees it on next page load */
+    if (!cloudUrl()) return;
+    if (!adminKey()) {
+      alert('⚠️ Settings saved on this device, but no Admin Key is set — other devices will not see this change.');
+      return;
+    }
+    try {
+      const s = ILPSettings.get();
+      const r = await cloud({
+        action:   'settings_save',
+        adminKey: adminKey(),
+        amount:   s.amount,
+        planDays: s.planDays,
+        upiId:    s.upiId,
+        payee:    s.payee,
+        qrUrl:    s.qrUrl || ''
+      });
+      if (r && r.ok) {
+        console.log('[iLovePrint] Settings pushed to cloud.');
+      } else {
+        alert('⚠️ Saved locally, but cloud sync returned: ' + ((r && r.msg) || 'unknown'));
+      }
+    } catch (e) {
+      alert('⚠️ Saved locally, but cloud sync failed: ' + e.message +
+            '\nOther devices will not see this change until connectivity is restored.');
+    }
+  };
   /* ================================================================
      INIT
      ================================================================ */
-  window.addEventListener('DOMContentLoaded', function () {
+   window.addEventListener('DOMContentLoaded', function () {
     refreshBadge();
-    setTimeout(revalidate, 1200);
+    /* Pull fresh settings FIRST so the payment modal always shows the current amount */
+    loadSettingsFromCloud().then(function () {
+      setTimeout(revalidate, 1200);
+    });
     setTimeout(injectAdminKeyField, 1800);
   });
-
 })();
 </script>
 <!-- ============ END iLovePrint ADD-ON v4 ============ -->
