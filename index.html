@@ -954,28 +954,7 @@
         min-height: 297mm !important;
         padding: var(--page-margin-top, 5mm) var(--page-margin-right, 5mm) var(--page-margin-bottom, 5mm) var(--page-margin-left, 5mm) !important;
       }
-      /* CROPPER: prevent the phantom second page by locking every ancestor
-         to exactly 210mm and clipping any sub-pixel overflow. */
-      body.mode-cropper,
-      body.mode-cropper html,
-      body.mode-cropper .app-container,
-      body.mode-cropper #cropperSection,
-      body.mode-cropper .ac-layout,
-      body.mode-cropper .ac-stage,
-      body.mode-cropper .ac-a4outer,
-      body.mode-cropper .ac-a4fit {
-        width: 210mm !important;
-        max-width: 210mm !important;
-        height: 297mm !important;
-        max-height: 297mm !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-        box-shadow: none !important;
-        border: 0 !important;
-        transform: none !important;
-      }
-
+     
       body.mode-cropper .ac-paper {
         width: 210mm !important;
         height: 297mm !important;
