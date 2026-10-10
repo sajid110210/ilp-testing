@@ -688,7 +688,7 @@
     .l-card-btn { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 800; padding-top: 14px; border-top: 1px solid #f1f5f9; }
 
     #cropperSection { display: none; }
-    .ac-layout{ display:grid; grid-template-columns:360px 1fr; gap:20px; align-items:start; transition:grid-template-columns .25s ease; }
+    .ac-layout{ display:grid; grid-template-columns:300px 1fr; gap:20px; align-items:start; transition:grid-template-columns .25s ease; }
     .ac-layout.menu-collapsed{grid-template-columns:0px 1fr; gap:0}
     .ac-layout.menu-collapsed .ac-sidebar{display:none}
 
@@ -752,9 +752,10 @@
     .ac-stage-toolbar{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px}
     .ac-stage-toolbar h3{margin:0; font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#e2e8f0; font-weight:800}
 
-    #acSrcWrap{
-      display:flex; justify-content:center; align-items:center; min-height:220px;
-      overflow:hidden; border-radius:12px; background:#040714; border:1px solid rgba(255,255,255,0.06);
+      #acSrcWrap{
+      display:flex; justify-content:center; align-items:center; min-height:640px;
+      overflow:auto; border-radius:12px; background:#040714; border:1px solid rgba(255,255,255,0.06);
+      padding: 12px;
     }
     #acSrcCanvas{display:block; cursor:crosshair; touch-action:none; max-width:100%}
     .ac-empty{color:#64748b; font-size:13px; text-align:center; padding:38px 12px; line-height:1.6}
@@ -4106,7 +4107,7 @@
       highlightSelectedOnSheet();
     }
 
-    function buildSourceView(){
+       function buildSourceView(){
       const doc = getActiveDoc();
       if(!doc) return;
       const wrap = $('#acSrcWrap');
@@ -4115,19 +4116,23 @@
       canvas.id = 'acSrcCanvas';
       wrap.appendChild(canvas);
 
-      const availW = Math.max(220, wrap.clientWidth - 10);
-      const availH = Math.min(440, Math.max(220, window.innerHeight * 0.42));
+      /* Use the full width of the container and a much taller viewport.
+         Falls back to 620px minimum so it's always comfortably large. */
+      const availW = Math.max(320, wrap.clientWidth - 16);
+      const availH = Math.max(620, window.innerHeight * 0.68);
       const s = Math.min(availW / doc.img.width, availH / doc.img.height, 1);
 
       const dw = Math.max(1, Math.round(doc.img.width * s));
       const dh = Math.max(1, Math.round(doc.img.height * s));
       canvas.width = dw; canvas.height = dh;
+      canvas.style.width  = dw + 'px';
+      canvas.style.height = dh + 'px';
+      canvas.style.maxWidth = 'none';
       viewScale = s;
 
       drawSourceOverlay(canvas, doc);
       attachCornerDrag(canvas, doc);
     }
-
     function drawSourceOverlay(canvas, doc){
       const ctx = canvas.getContext('2d');
       const s = viewScale;
