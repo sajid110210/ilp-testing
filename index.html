@@ -4884,18 +4884,22 @@
             onmouseout="this.style.transform='scale(1)'">✕</button>
     <h2>✨ Create Your Account</h2>
     <p style="font-size:12.5px;">Register to use iLovePrint Studio. After registration you'll need to pay the activation fee.</p>
+
     <div class="ilp-field"><label>Your Name *</label><input id="ilpRegName" type="text" placeholder="Full Name"></div>
     <div class="ilp-field"><label>Shop / Business Name *</label><input id="ilpRegShop" type="text" placeholder="Shop name"></div>
     <div class="ilp-field"><label>Mobile Number (10-digit) *</label><input id="ilpRegMobile" type="tel" maxlength="10" placeholder="10-digit mobile"></div>
+    <div class="ilp-field"><label>Create Password *</label><input id="ilpRegPass" type="password" minlength="4" placeholder="Minimum 4 characters"></div>
+    <div class="ilp-field"><label>Confirm Password *</label><input id="ilpRegPass2" type="password" minlength="4" placeholder="Re-enter your password"></div>
     <div class="ilp-field"><label>Address / City *</label><input id="ilpRegAddr" type="text" placeholder="City, State"></div>
-    <div class="ilp-note">ℹ️ Your mobile number will be your <b>User ID</b> and default <b>Password</b>. You can change the password after login.</div>
+
+    <div class="ilp-note">ℹ️ Your mobile number will be your <b>User ID</b>. Remember the password you set — you'll need it to login on any device.</div>
+
     <div class="ilp-btn-row">
       <button class="ilp-btn ghost" onclick="ILP_AUTH.showLogin()">Already registered? Login</button>
       <button class="ilp-btn primary" onclick="ILP_AUTH.submitRegistration()">Register →</button>
     </div>
   </div>
 </div>
-
 <!-- Login Modal -->
 <div id="ilpLoginModal" class="ilp-overlay no-print" style="display:none;">
   <div class="ilp-modal" style="max-width:400px;">
@@ -5346,12 +5350,17 @@
     showLogin() { hideAllAuthModals(); show('ilpLoginModal'); },
 
     submitRegistration() {
-      const name = gEl('ilpRegName').value.trim();
-      const shop = gEl('ilpRegShop').value.trim();
+      const name   = gEl('ilpRegName').value.trim();
+      const shop   = gEl('ilpRegShop').value.trim();
       const mobile = gEl('ilpRegMobile').value.trim();
-      const addr = gEl('ilpRegAddr').value.trim();
+      const pass   = gEl('ilpRegPass').value;
+      const pass2  = gEl('ilpRegPass2').value;
+      const addr   = gEl('ilpRegAddr').value.trim();
+
       if (!name || !shop || !addr) return alert('Please fill all fields.');
       if (!/^\d{10}$/.test(mobile)) return alert('Enter a valid 10-digit mobile number.');
+      if (!pass || pass.length < 4) return alert('Password must be at least 4 characters.');
+      if (pass !== pass2)           return alert('Passwords do not match.');
 
       const existing = Users.find(mobile);
       if (existing && existing.password && existing.password !== mobile) {
@@ -5360,12 +5369,14 @@
       const s = ILPSettings.get();
       const account = {
         name: name, shopName: shop, mobile: mobile, address: addr,
-        password: mobile,
-        status: (existing && existing.status === 'approved') ? 'approved' : (existing && existing.status === 'pending_approval') ? 'pending_approval' : 'pending_payment',
+        password: pass,
+        status: (existing && existing.status === 'approved') ? 'approved'
+              : (existing && existing.status === 'pending_approval') ? 'pending_approval'
+              : 'pending_payment',
         amount: s.amount,
         registeredAt: (existing && existing.registeredAt) || Date.now(),
         rechargeDate: existing ? existing.rechargeDate : null,
-        expiryDate: existing ? existing.expiryDate : null,
+        expiryDate:   existing ? existing.expiryDate   : null,
         stats: (existing && existing.stats) || emptyStats()
       };
       LS.set(K.ACC, account);
@@ -5375,7 +5386,8 @@
       postToSheet({
         action: 'register_user',
         name: name, shopName: shop, mobile: mobile, address: addr,
-        password: mobile, status: account.status, amount: account.amount,
+        password: pass,
+        status: account.status, amount: account.amount,
         registeredAt: new Date(account.registeredAt).toISOString(),
         stats: account.stats
       });
@@ -5387,13 +5399,11 @@
       refreshBadge();
 
       if (account.status === 'approved' && account.expiryDate && account.expiryDate > Date.now()) {
-        alert('Welcome back! Your plan is active.');
-        return;
+        alert('Welcome back! Your plan is active.'); return;
       }
       if (account.status === 'pending_approval') return this.showPending();
       this.showPaymentModal();
-    },
-
+    },  
     submitLogin() {
       const mobile = gEl('ilpLoginMobile').value.trim();
       const pass = gEl('ilpLoginPass').value;
@@ -5457,7 +5467,7 @@
       postToSheet({
         action: 'register_user',
         name: acc.name, shopName: acc.shopName, mobile: acc.mobile, address: acc.address,
-        password: acc.password || acc.mobile, status: acc.status, amount: acc.amount,
+password: acc.password || acc.mobile, status: acc.status, amount: acc.amount,
         registeredAt: new Date(acc.registeredAt || Date.now()).toISOString(),
         paidAt: new Date(acc.paidAt).toISOString(),
         stats: acc.stats || emptyStats()
@@ -6005,8 +6015,7 @@
         setTimeout(() => ILP_AUTH.showPending(), 600);
       }
     } else {
-      setTimeout(() => { ILP_AUTH.showRegistration(); addLog('visit', 'New visitor'); }, 800);
-    }
+addLog('visit', 'New visitor');    }
     const oldSub = gEl('regSubmitBtn');
     if (oldSub) oldSub.textContent = 'Continue →';
   });
@@ -6740,41 +6749,44 @@ function json(obj) {
   /* ================================================================
      OVERRIDE — REGISTRATION
      ================================================================ */
-  ILP_AUTH.submitRegistration = async function () {
-    if (!cloudUrl()) return ORIG.submitRegistration.apply(this, arguments);
+ILP_AUTH.submitRegistration = async function () {
+  if (!cloudUrl()) return ORIG.submitRegistration.apply(this, arguments);
 
-    const name   = ($('ilpRegName').value || '').trim();
-    const shop   = ($('ilpRegShop').value || '').trim();
-    const mobile = ($('ilpRegMobile').value || '').trim();
-    const addr   = ($('ilpRegAddr').value || '').trim();
-    if (!name || !shop || !addr) return alert('Please fill all fields.');
-    if (!/^\d{10}$/.test(mobile)) return alert('Enter a valid 10-digit mobile number.');
+  const name   = ($('ilpRegName').value   || '').trim();
+  const shop   = ($('ilpRegShop').value   || '').trim();
+  const mobile = ($('ilpRegMobile').value || '').trim();
+  const pass   = $('ilpRegPass').value;
+  const pass2  = $('ilpRegPass2').value;
+  const addr   = ($('ilpRegAddr').value   || '').trim();
 
-    busy(true, 'Creating your account…');
-    let r;
-    try {
-      r = await cloud({
-        action: 'register', mobile, name, shopName: shop,
-        address: addr, password: mobile, amount: cfg().amount
-      });
-    } catch (err) {
-      busy(false);
-      return alert('Cannot reach the server. Registration needs an internet connection.\n\n' + err.message);
-    }
+  if (!name || !shop || !addr) return alert('Please fill all fields.');
+  if (!/^\d{10}$/.test(mobile)) return alert('Enter a valid 10-digit mobile number.');
+  if (!pass || pass.length < 4) return alert('Password must be at least 4 characters.');
+  if (pass !== pass2)           return alert('Passwords do not match.');
+
+  busy(true, 'Creating your account…');
+  let r;
+  try {
+    r = await cloud({
+      action: 'register', mobile, name, shopName: shop,
+      address: addr, password: pass, amount: cfg().amount   // ← user-defined
+    });
+  } catch (err) {
     busy(false);
+    return alert('Cannot reach the server. Registration needs an internet connection.\n\n' + err.message);
+  }
+  busy(false);
 
-    if (!r.ok) {
-      if (r.code === 'EXISTS') { alert(r.msg); return ILP_AUTH.showLogin(); }
-      return alert(r.msg || 'Registration failed.');
-    }
+  if (!r.ok) {
+    if (r.code === 'EXISTS') { alert(r.msg); return ILP_AUTH.showLogin(); }
+    return alert(r.msg || 'Registration failed.');
+  }
 
-    const acc = saveAccountFromServer(r.user);
-    try { const om = $('userRegistrationModal'); if (om) om.style.display = 'none'; } catch (e) {}
-    refreshBadge();
-    routeByStatus(acc);
-  };
-
-  /* ================================================================
+  const acc = saveAccountFromServer(r.user);
+  try { const om = $('userRegistrationModal'); if (om) om.style.display = 'none'; } catch (e) {}
+  refreshBadge();
+  routeByStatus(acc);
+};  /* ================================================================
      OVERRIDE — PAYMENT MARKED
      ================================================================ */
   ILP_AUTH.markPaid = async function () {
