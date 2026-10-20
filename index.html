@@ -3222,6 +3222,9 @@
 
     async function handleAddCardToSheetAction() {
       const { wCm, hCm, isVertical, isSingle, is4x6UpDownInverted } = getTargetDimensions();
+      const numCopiesPreview = Math.max(1, Math.min(10, parseInt(document.getElementById('cardCopies').value, 10) || 1));
+      // 1 point per card
+      if (window.ILP_WALLET && !window.ILP_WALLET.canUse(numCopiesPreview)) return;
 
       // PVC MODE: save Front and Back as two separate single cards
       if (currentIdPrintMode === 'pvc' || (isSingle && frontCropData && backCropData)) {
@@ -3271,6 +3274,7 @@
         }
 
         checkMilestoneAndRecord('ID Card Studio', numCopies * (backCropData ? 2 : 1));
+        if (window.ILP_WALLET) window.ILP_WALLET.debit('Smart ID Card', numCopies * (backCropData ? 2 : 1));
         document.getElementById('pdfInput').value = '';
         stageWrapper.style.display = 'none';
         setWorkflowStep('idle');
@@ -3332,6 +3336,7 @@
       }
 
       checkMilestoneAndRecord('ID Card Studio', numCopies);
+      if (window.ILP_WALLET) window.ILP_WALLET.debit('Smart ID Card', numCopies);
       document.getElementById('pdfInput').value = '';
       stageWrapper.style.display = 'none';
       setWorkflowStep('idle');
@@ -3640,6 +3645,8 @@
     };
 
     function addPassportFileDirect(file) {
+      // 1 point per Add Person
+      if (window.ILP_WALLET && !window.ILP_WALLET.canUse(1)) return;
       const r = new FileReader();
       r.onload = function(evt) {
         personCounter++;
@@ -3661,6 +3668,7 @@
         updatePassportLayout();
         dbSavePassportProfiles(personList);
         checkMilestoneAndRecord('Passport Photo', defaultQty);
+        if (window.ILP_WALLET) window.ILP_WALLET.debit('Passport Add Person', 1);
       };
       r.readAsDataURL(file);
     }
@@ -4109,6 +4117,8 @@
     };
 
     downloadBtn.onclick = () => {
+      // 1 point for AI BG / enhancer download
+      if (window.ILP_WALLET && !window.ILP_WALLET.canUse(1)) return;
       const mime = formatSelect.value;
       const ext = mime === 'image/jpeg' ? 'jpg' : mime === 'image/webp' ? 'webp' : 'png';
       const link = document.createElement('a');
@@ -4116,6 +4126,7 @@
       link.href = processedCanvas.toDataURL(mime, 1.0);
       link.click();
       checkMilestoneAndRecord('AI BG & Upscale', 1);
+      if (window.ILP_WALLET) window.ILP_WALLET.debit('AI BG Download', 1);
     };
 
     /* AUTOCROPPER PRO SCRIPT ENGINE */
@@ -5347,6 +5358,8 @@
             window.print();
             setTimeout(function () { host.innerHTML = ''; }, 600);
           }
+          // 1 point per AutoCropper print
+          if (window.ILP_WALLET) window.ILP_WALLET.debit('AutoCropper Print', 1);
           setTimeout(function () {
             if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
           }, 1200);
@@ -8003,6 +8016,9 @@ ILP_AUTH.submitRegistration = async function () {
 
   window.openBandhkamModule = function () {
     if (!requireAuth()) return;
+    // 5 points for Bandhkam Kamgar card
+    if (window.ILP_WALLET && !window.ILP_WALLET.canUse(5)) return;
+    if (window.ILP_WALLET) window.ILP_WALLET.debit('Bandhkam Card', 5);
 
     hideOthers();
 
@@ -8119,8 +8135,12 @@ ILP_AUTH.submitRegistration = async function () {
           if (data.planType === 'UNLIMITED') {
             acc.expiryDate = Date.parse(data.expiryDate);
             acc.rechargeDate = Date.now();
+            acc.plan_type = 'UNLIMITED';
           } else if (data.planType === 'POINTS') {
             acc.points_balance = Number(data.currentPoints) || 0;
+            acc.expiryDate = null;  // points plan has no expiry
+            acc.rechargeDate = Date.now();
+            acc.plan_type = 'POINTS';
           }
           localStorage.setItem('iloveprint_account', JSON.stringify(acc));
           
