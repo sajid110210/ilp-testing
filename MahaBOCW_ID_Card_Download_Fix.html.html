@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MahaBOCW E-Card Automatic ID Card Maker | ओळखपत्र जनरेटर</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts for Marathi & UI -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Mukta:wght@500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+      background-color: #f1f5f9;
+    }
+    input[type="range"] {
+      accent-color: #ea580c;
+    }
+
+    /* Print Setup: Completely eliminate unprinted page elements from layout flow */
+    @media print {
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        width: 100% !important;
+        height: auto !important;
+      }
+      body > *:not(#printArea) {
+        display: none !important;
+      }
+      #printArea {
+        display: block !important;
+        position: static !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+      }
+    }
+  </style>
+  <style id="dynamicPrintPageStyle"></style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col">
+
+  <!-- Offscreen Canvases -->
+  <canvas id="croppedTransparentCanvas" class="hidden"></canvas>
+  <canvas id="a4SheetCanvas" width="2480" height="3508" class="hidden"></canvas>
+  <canvas id="photo4x6Canvas" width="1200" height="1800" class="hidden"></canvas>
+  <canvas id="pvcFrontCanvas" width="1024" height="648" class="hidden"></canvas>
+  <canvas id="pvcBackCanvas" width="1024" height="648" class="hidden"></canvas>
+
+  <!-- Top Navigation Header -->
+  <header class="bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center font-bold text-xl border border-white/25 shadow-inner">
+          🪪
+        </div>
+        <div>
+          <h1 class="text-lg md:text-xl font-bold tracking-tight flex items-center gap-2">
+            MahaBOCW Smart ID Card Studio
+            <span class="text-xs font-semibold bg-amber-300 text-amber-950 px-2.5 py-0.5 rounded-full">A4 • 4×6 • PVC Ready</span>
+          </h1>
+          <p class="text-xs text-amber-100">महाराष्ट्र इमारत व इतर बांधकाम कामगार कल्याणकारी मंडळ — स्वयंचलित ओळखपत्र जनरेटर</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <label for="templateFileInput" class="cursor-pointer text-xs bg-white/20 hover:bg-white/30 text-white font-medium px-3 py-1.5 rounded-lg border border-white/30 transition flex items-center gap-1.5">
+          <span>🖼️</span> Change Front Template
+          <input id="templateFileInput" type="file" accept="image/*" class="hidden" />
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="max-w-7xl w-full mx-auto px-4 py-5 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Left Column: Upload BOCW Box -->
+    <div class="lg:col-span-4 flex flex-col gap-5">
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center">1</span>
+            <h2 class="font-bold text-slate-800 text-sm md:text-base">Upload BOCW E-Card PDF</h2>
+          </div>
+          <span id="detectedRegBadge" class="hidden"></span>
+        </div>
+
+        <label id="pdfDropZone" for="pdfFileInput" class="group cursor-pointer border-2 border-dashed border-orange-300 hover:border-orange-500 bg-orange-50/50 hover:bg-orange-50 rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all">
+          <div class="w-14 h-14 rounded-full bg-orange-100 group-hover:bg-orange-200 text-orange-600 flex items-center justify-center text-3xl mb-3 transition">
+            📄
+          </div>
+          <p class="text-sm font-semibold text-slate-800">
+            Click to Upload or Drag & Drop <span class="text-orange-600 underline">bocw-profile.pdf</span>
+          </p>
+          <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+            Auto-crops text data, Photo & QR code onto your clean Front Card canvas
+          </p>
+          <input id="pdfFileInput" type="file" accept=".pdf,image/*" class="hidden" />
+        </label>
+
+        <!-- Status Message Bar -->
+        <div id="statusBanner" class="mt-3.5 text-xs px-3.5 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-medium flex items-center justify-between">
+          <span id="statusText">Ready. Upload bocw-profile.pdf to automatically generate ID Card.</span>
+          <span id="statusSpinner" class="hidden animate-spin h-4 w-4 border-2 border-orange-600 border-t-transparent rounded-full"></span>
+        </div>
+      </section>
+
+      <!-- Hidden Fine-Tuning Controls Container -->
+      <div class="hidden" aria-hidden="true">
+        <input id="chkShowGuide" type="checkbox" />
+        <input id="sliderPlaceX" type="range" min="-10" max="30" step="0.2" value="1.2" />
+        <span id="valPlaceX">1.2%</span>
+        <input id="sliderPlaceY" type="range" min="15" max="60" step="0.2" value="34.0" />
+        <span id="valPlaceY">34.0%</span>
+        <input id="sliderPlaceW" type="range" min="50" max="105" step="0.2" value="95.5" />
+        <span id="valPlaceW">95.5%</span>
+        <input id="sliderPlaceH" type="range" min="35" max="85" step="0.2" value="63.5" />
+        <span id="valPlaceH">63.5%</span>
+        <button id="btnResetPlacement"></button>
+
+        <input id="sliderCropTop" type="range" min="0" max="60" step="0.2" value="12.0" />
+        <span id="valCropTop">12.0%</span>
+        <input id="sliderCropBottom" type="range" min="15" max="100" step="0.2" value="38.0" />
+        <span id="valCropBottom">38.0%</span>
+        <input id="sliderCropLeft" type="range" min="0" max="45" step="0.2" value="8.0" />
+        <span id="valCropLeft">8.0%</span>
+        <input id="sliderCropRight" type="range" min="50" max="100" step="0.2" value="92.0" />
+        <span id="valCropRight">92.0%</span>
+        <button id="btnAutoCropAgain"></button>
+        <button id="btnToggleSourceInspector"></button>
+        <button id="btnCloseInspector"></button>
+        <div id="sourceInspectorPanel"><canvas id="pdfInspectorCanvas"></canvas></div>
+
+        <input id="sliderThreshold" type="range" min="180" max="254" step="1" value="232" />
+        <span id="valThreshold">232</span>
+        <input id="sliderContrast" type="range" min="1.0" max="1.6" step="0.05" value="1.15" />
+        <span id="valContrast">1.15x</span>
+        <input id="chkProtectPhoto" type="checkbox" />
+        <input id="chkProtectQR" type="checkbox" />
+        <canvas id="thumbFrontCanvas" width="180" height="114"></canvas>
+        <canvas id="thumbBackCanvas" width="180" height="114"></canvas>
+      </div>
+    </div>
+
+    <!-- Right Column: Live Preview & Multi-Format Studio -->
+    <div class="lg:col-span-8 flex flex-col gap-5">
+
+      <!-- One-time local browser permission banner -->
+      <div id="taintedBanner" class="hidden bg-amber-50 border-2 border-amber-400 text-amber-950 p-4 rounded-2xl flex items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">⚡</span>
+          <div>
+            <p class="font-bold text-sm">One-Time Setup Required</p>
+            <p class="text-xs text-amber-800">Chrome blocks direct export of local files. Click to select <b>frontb.jpg</b> once. It will be saved to your browser, unlocking all downloads instantly.</p>
+          </div>
+        </div>
+        <button id="btnUnlockDownloads" class="shrink-0 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow transition">
+          📂 Select frontb.jpg
+        </button>
+      </div>
+
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5 flex flex-col gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center">2</span>
+            <div>
+              <h2 class="font-bold text-slate-800 text-base">ID Card Preview & Print / Download Studio</h2>
+              <p class="text-xs text-slate-500">Drag directly on the Front Card to adjust placement • 0.1 cm folding space included</p>
+            </div>
+          </div>
+
+          <!-- Preview Mode Switcher -->
+          <div class="flex flex-wrap bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold gap-1">
+            <button data-preview="combined" class="preview-mode-btn bg-white text-orange-600 shadow-sm px-3 py-1.5 rounded-lg transition">
+              🪪 Side-by-Side
+            </button>
+            <button data-preview="pvc" class="preview-mode-btn text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg transition">
+              💳 PVC Front & Back
+            </button>
+            <button data-preview="a4" class="preview-mode-btn text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg transition">
+              📄 A4 Paper
+            </button>
+            <button data-preview="4x6" class="preview-mode-btn text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg transition">
+              🖼️ 4×6 Photo Sheet
+            </button>
+          </div>
+        </div>
+
+        <!-- VIEW 1: Side-by-Side Combined Canvas -->
+        <div id="previewContainerCombined" class="bg-slate-200/80 rounded-xl p-3 border border-slate-300 shadow-inner flex flex-col items-center justify-center">
+          <div class="relative w-full overflow-hidden rounded-lg shadow-md bg-white border border-slate-300">
+            <canvas id="finalCombinedCanvas" width="2060" height="648" class="w-full h-auto block cursor-move"></canvas>
+          </div>
+          <div class="w-full flex justify-between text-[11px] font-medium text-slate-600 mt-2 px-1">
+            <span>Front Card (8.9 cm × 5.8 cm)</span>
+            <span class="text-orange-600 font-bold">0.1 cm Folding Space</span>
+            <span>Back Card (8.9 cm × 5.8 cm)</span>
+          </div>
+        </div>
+
+        <!-- VIEW 2: PVC Front & Back Preview -->
+        <div id="previewContainerPVC" class="hidden bg-slate-200/80 rounded-xl p-4 border border-slate-300 shadow-inner">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-white p-3 rounded-xl shadow border border-slate-200 flex flex-col items-center">
+              <div class="w-full flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-800">PVC FRONT CARD (CR80)</span>
+                <span class="text-[11px] text-orange-600 font-semibold">1024 × 648 px</span>
+              </div>
+              <canvas id="previewPvcFront" width="1024" height="648" class="w-full h-auto rounded border border-slate-300 shadow-sm"></canvas>
+              <div class="grid grid-cols-2 gap-2 w-full mt-3">
+                <button id="btnPvcFrontJPG2" class="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition">
+                  ⬇️ Front JPG
+                </button>
+                <button id="btnPvcFrontPNG2" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2 px-3 rounded-lg transition">
+                  ⬇️ Front PNG
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-white p-3 rounded-xl shadow border border-slate-200 flex flex-col items-center">
+              <div class="w-full flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-800">PVC BACK CARD (CR80)</span>
+                <span class="text-[11px] text-emerald-600 font-semibold">1024 × 648 px</span>
+              </div>
+              <canvas id="previewPvcBack" width="1024" height="648" class="w-full h-auto rounded border border-slate-300 shadow-sm"></canvas>
+              <div class="grid grid-cols-2 gap-2 w-full mt-3">
+                <button id="btnPvcBackJPG2" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition">
+                  ⬇️ Back JPG
+                </button>
+                <button id="btnPvcBackPNG2" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2 px-3 rounded-lg transition">
+                  ⬇️ Back PNG
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 3: A4 Paper Preview -->
+        <div id="previewContainerA4" class="hidden bg-slate-200/80 rounded-xl p-4 border border-slate-300 shadow-inner flex flex-col items-center">
+          <div class="max-w-md w-full bg-white shadow-lg border border-slate-300 rounded-lg overflow-hidden">
+            <canvas id="previewA4Canvas" width="826" height="1169" class="w-full h-auto block"></canvas>
+          </div>
+        </div>
+
+        <!-- VIEW 4: 4×6 Photo Paper Preview -->
+        <div id="previewContainer4x6" class="hidden bg-slate-200/80 rounded-xl p-4 border border-slate-300 shadow-inner flex flex-col items-center">
+          <div class="max-w-xs w-full bg-white shadow-lg border border-slate-300 rounded-lg overflow-hidden">
+            <canvas id="preview4x6Canvas" width="600" height="900" class="w-full h-auto block"></canvas>
+          </div>
+        </div>
+
+        <!-- DOWNLOAD & PRINT BUTTONS GRID -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+
+          <!-- OPTION 1: PVC CARD OPTION -->
+          <div class="rounded-xl border-2 border-indigo-200 bg-indigo-50/40 p-3.5 flex flex-col justify-between gap-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider bg-indigo-600 text-white px-2 py-0.5 rounded mb-1">PVC Card Option</span>
+                <h3 class="text-sm font-bold text-slate-800">Separate Front & Back Download</h3>
+                <p class="text-[11px] text-slate-600">Standard CR80 size with combined PDF worker data + frontb</p>
+              </div>
+              <button id="btnPrintPVC" class="shrink-0 bg-indigo-100 hover:bg-indigo-200 text-indigo-900 border border-indigo-300 text-xs font-bold px-2.5 py-1.5 rounded-lg transition flex items-center gap-1">
+                <span>🖨️</span> Print PVC
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btnDownloadPvcFront" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-3 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 text-xs">
+                <span>⬇️</span> Front (JPG)
+              </button>
+              <button id="btnDownloadPvcBack" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-3 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 text-xs">
+                <span>⬇️</span> Back (JPG)
+              </button>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <button id="btnDownloadPvcFrontPNG" class="bg-white hover:bg-indigo-100 text-indigo-800 border border-indigo-300 font-semibold py-1.5 px-2 rounded-lg text-[11px] transition">
+                Front (PNG)
+              </button>
+              <button id="btnDownloadPvcBackPNG" class="bg-white hover:bg-indigo-100 text-indigo-800 border border-indigo-300 font-semibold py-1.5 px-2 rounded-lg text-[11px] transition">
+                Back (PNG)
+              </button>
+              <button id="btnDownloadPvcBoth" class="bg-indigo-900 hover:bg-slate-900 text-white font-semibold py-1.5 px-2 rounded-lg text-[11px] transition">
+                ⚡ Both Files
+              </button>
+            </div>
+          </div>
+
+          <!-- OPTION 2: A4 PAPER OPTION (0.1cm Folding Space) -->
+          <div class="rounded-xl border-2 border-orange-200 bg-orange-50/40 p-3.5 flex flex-col justify-between gap-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider bg-orange-600 text-white px-2 py-0.5 rounded mb-1">A4 Paper Option</span>
+                <h3 class="text-sm font-bold text-slate-800">A4 Size Print (0.1cm Fold Space)</h3>
+                <p class="text-[11px] text-slate-600">Side-by-side with 0.1 cm fold space on 300 DPI A4 sheet</p>
+              </div>
+              <button id="btnPreviewA4Quick" class="shrink-0 text-[11px] text-orange-700 hover:underline font-bold">
+                Preview A4
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btnPrintA4" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 px-3 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 text-xs">
+                <span>🖨️</span> Print A4
+              </button>
+              <button id="btnDownloadA4JPG" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-3 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 text-xs">
+                <span>📥</span> A4 Sheet (JPG)
+              </button>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-orange-900 bg-orange-100/80 px-2.5 py-1 rounded-lg">
+              <span>Scale: <strong>100% / Actual Size</strong></span>
+              <button id="btnDownloadA4PNG" class="underline font-bold hover:text-orange-700">A4 PNG</button>
+            </div>
+          </div>
+
+          <!-- OPTION 3: 4×6 PHOTO PAPER OPTION (0.1cm Folding Space) -->
+          <div class="rounded-xl border-2 border-emerald-200 bg-emerald-50/40 p-3.5 flex flex-col justify-between gap-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider bg-emerald-600 text-white px-2 py-0.5 rounded mb-1">4×6 Photo Paper</span>
+                <h3 class="text-sm font-bold text-slate-800">4×6 Inch Photo Print</h3>
+                <p class="text-[11px] text-slate-600">Front & Back stacked with 0.1 cm fold space</p>
+              </div>
+              <button id="btnPreview4x6Quick" class="shrink-0 text-[11px] text-emerald-700 hover:underline font-bold">
+                Preview 4×6
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btnPrint4x6" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 text-xs">
+                <span>🖨️</span> Print 4×6
+              </button>
+              <button id="btnDownload4x6JPG" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-3 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 text-xs">
+                <span>📥</span> 4×6 Sheet (JPG)
+              </button>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-emerald-900 bg-emerald-100/80 px-2.5 py-1 rounded-lg">
+              <span>Each card: <strong>8.9 cm × 5.8 cm</strong></span>
+              <button id="btnDownload4x6PNG" class="underline font-bold hover:text-emerald-700">4×6 PNG</button>
+            </div>
+          </div>
+
+          <!-- OPTION 4: DIRECT COMBINED SIDE-BY-SIDE IMAGE -->
+          <div class="rounded-xl border-2 border-slate-200 bg-slate-50 p-3.5 flex flex-col justify-between gap-3">
+            <div>
+              <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider bg-slate-700 text-white px-2 py-0.5 rounded mb-1">Combined Card Image</span>
+              <h3 class="text-sm font-bold text-slate-800">Combined Image with 0.1cm Fold</h3>
+              <p class="text-[11px] text-slate-600">Single image (2060 × 648 px) with Front, 0.1cm gap & Back</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btnDownloadJPG" class="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold py-2.5 px-3 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 text-xs">
+                <span>📥</span> Combined JPG
+              </button>
+              <button id="btnDownloadPNG" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-3 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 text-xs">
+                <span>🖼️</span> Combined PNG
+              </button>
+            </div>
+            <div class="text-[11px] text-slate-500 flex items-center justify-between px-1">
+              <span>300 DPI Ready</span>
+              <span id="activeFileNameLabel" class="font-mono text-slate-700 font-semibold">MahaBOCW_ID_Card</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="printArea" class="hidden"></div>
+
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // =========================================================================
+    // CONSTANTS & GEOMETRY (0.1 CM FOLDING SPACE)
+    // =========================================================================
+    const CARD_WIDTH = 1024;   // 8.9 cm ratio
+    const CARD_HEIGHT = 648;   // 5.8 cm ratio
+    const COMBINED_FOLD_GAP = 12; // 0.1 cm ratio on master combined canvas
+
+    const PX_PER_CM_300DPI = 300 / 2.54; // ~118.11 px/cm
+    const A4_WIDTH_PX = 2480;
+    const A4_HEIGHT_PX = 3508;
+
+    const SINGLE_CARD_W_300DPI = Math.round(8.9 * PX_PER_CM_300DPI); // 1051 px (8.9 cm)
+    const SINGLE_CARD_H_300DPI = Math.round(5.8 * PX_PER_CM_300DPI); // 685 px (5.8 cm)
+    const FOLD_GAP_300DPI = Math.round(0.1 * PX_PER_CM_300DPI);       // 12 px (0.1 cm)
+
+    const PHOTO_4X6_W_PX = 1200;
+    const PHOTO_4X6_H_PX = 1800;
+
+    const state = {
+      sourcePageCanvas: document.createElement('canvas'),
+      hasSourceLoaded: false,
+      isDirectCroppedImage: false,
+      extractedFileName: 'MahaBOCW_ID_Card',
+      extractedRegNo: '',
+
+      crop: { top: 12.0, bottom: 38.0, left: 8.0, right: 92.0 },
+      photoBox: { x1: 0.765, y1: 0.06, x2: 0.978, y2: 0.505 },
+      qrBox: { x1: 0.765, y1: 0.51, x2: 0.945, y2: 0.96 },
+
+      whiteThreshold: 232,
+      contrastBoost: 1.15,
+      protectPhoto: false,
+      protectQR: false,
+
+      placement: { x: 1.2, y: 34.0, w: 95.5, h: 63.5 },
+
+      builtInFrontCanvas: document.createElement('canvas'),
+      builtInBackCanvas: document.createElement('canvas'),
+
+      frontBoBase64Img: null,
+      isFrontTainted: false, 
+      backBoBase64Img: null,
+
+      previewMode: 'combined',
+      dragging: false,
+      dragStartX: 0,
+      dragStartY: 0,
+      initialPlaceX: 0,
+      initialPlaceY: 0,
+      showGuide: false,
+    };
+
+    // =========================================================================
+    // 1. FRONT & BACK TEMPLATE ENGINE (DIRECT IMAGE BINDING + LOCALSTORAGE CACHE)
+    // =========================================================================
+    async function loadFrontTemplateImage() {
+      // 1. Check permanent clean cache first
+      const cached = localStorage.getItem('MAHABOCW_FRONT_CACHE_V4');
+      if (cached) {
+        try {
+          const img = await loadImageFromDataURL(cached);
+          if (img && img.naturalWidth > 0) {
+            state.isFrontTainted = false; // Safe
+            return img;
+          }
+        } catch (e) {}
+      }
+
+      // 2. Direct folder load
+      const candidateNames = [
+        'frontb.jpg',
+        'frontb.jpg.jpeg',
+        'frontb.jpeg',
+        'front b.jpg',
+        'front b.jpeg',
+        'front.jpg',
+        'front.jpeg',
+        'frontb.png'
+      ];
+
+      for (const name of candidateNames) {
+        const loaded = await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => resolve(null);
+          img.src = `${name}?t=${Date.now()}`;
+        });
+        if (loaded && loaded.naturalWidth > 0) {
+          state.isFrontTainted = true; // Locked by Chrome
+          return loaded;
+        }
+      }
+      return null;
+    }
+
+    function drawBackCardTemplate(bctx) {
+      const backBgGrad = bctx.createLinearGradient(0, 0, CARD_WIDTH, CARD_HEIGHT);
+      backBgGrad.addColorStop(0, '#f7f4e9');
+      backBgGrad.addColorStop(1, '#f5f2e6');
+      bctx.fillStyle = backBgGrad;
+      bctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+
+      bctx.save();
+      bctx.beginPath();
+      bctx.moveTo(0, 120);
+      bctx.bezierCurveTo(310, 130, 615, 326, 1024, 262);
+      bctx.lineTo(1024, 306);
+      bctx.bezierCurveTo(655, 440, 345, 268, 0, 270);
+      bctx.closePath();
+      bctx.fillStyle = '#f9be14';
+      bctx.fill();
+      bctx.restore();
+
+      bctx.save();
+      bctx.fillStyle = '#0d264c';
+      bctx.textAlign = 'center';
+      bctx.font = '800 44px "Noto Sans Devanagari", "Mukta", sans-serif';
+      bctx.fillText('सूचना', 512, 76);
+
+      bctx.fillStyle = '#050505';
+      bctx.textAlign = 'left';
+      bctx.font = '700 31.5px "Noto Sans Devanagari", "Mukta", sans-serif';
+      bctx.fillText('१.  हे ओळखपत्र जपून ठेवावे.', 18, 142);
+      bctx.fillText('२.  हे ओळखपत्र गहाळ झाल्यास दुसरी प्रत शुल्क आकारून देण्यात येईल.', 18, 198);
+      bctx.fillText('३.  हे ओळखपत्र गहाळ झाल्यास त्वरित संबंधित जिल्हा कार्यालयास कळवावे.', 18, 253);
+      bctx.fillText('४.  हे ओळखपत्र सापडल्यास कृपया खालील पत्त्यावर पाठवावे.', 18, 307);
+
+      bctx.fillText('पत्ता  -  सचिव / मुख्य कार्यकारी अधिकारी, महाराष्ट्र इमारत आणि इतर', 16, 408);
+      bctx.fillText('बांधकाम कामगार कल्याणकारी मंडळ, मुंबई।', 16, 462);
+      bctx.fillText('MMTC हाऊस, ५ वा मजला, इ ब्लॉक, सी-२२, बीकेसी, बांद्रा (पूर्व),', 16, 517);
+      bctx.fillText('मुंबई - ४०० ०५१।', 16, 571);
+      bctx.fillText('फोन : ०२२-२६५७२६३१ / ३२', 16, 624);
+      bctx.restore();
+    }
+
+    async function initFrontAndBackTemplates() {
+      const fc = state.builtInFrontCanvas;
+      fc.width = CARD_WIDTH;
+      fc.height = CARD_HEIGHT;
+      const fctx = fc.getContext('2d');
+
+      const frontImg = await loadFrontTemplateImage();
+      if (frontImg) {
+        state.frontBoBase64Img = frontImg;
+        fctx.drawImage(frontImg, 0, 0, CARD_WIDTH, CARD_HEIGHT);
+      }
+
+      const bc = state.builtInBackCanvas;
+      bc.width = CARD_WIDTH;
+      bc.height = CARD_HEIGHT;
+      const bctx = bc.getContext('2d');
+      drawBackCardTemplate(bctx);
+
+      const backUrl = bc.toDataURL('image/png');
+      state.backBoBase64Img = await loadImageFromDataURL(backUrl);
+
+      checkIfCanvasTainted();
+
+      if (state.isFrontTainted) {
+        document.getElementById('taintedBanner').classList.remove('hidden');
+      }
+    }
+
+    function checkIfCanvasTainted() {
+      const cv = document.getElementById('pvcFrontCanvas');
+      try {
+        cv.toDataURL('image/jpeg');
+        document.getElementById('taintedBanner').classList.add('hidden');
+        return false;
+      } catch (err) {
+        document.getElementById('taintedBanner').classList.remove('hidden');
+        return true;
+      }
+    }
+
+    // =========================================================================
+    // 2. PDF UPLOAD & AUTO-CROP
+    // =========================================================================
+    async function handleFileUpload(file) {
+      if (!file) return;
+
+      if (file.name.toLowerCase().includes('front') || file.name.toLowerCase().includes('frontb')) {
+        await handleTemplateFileSelect(file);
+        return;
+      }
+
+      setStatus(`Processing "${file.name}"...`, true);
+
+      try {
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          const page = await pdf.getPage(1);
+
+          const scale = 4.0;
+          const viewport = page.getViewport({ scale });
+
+          const canvas = state.sourcePageCanvas;
+          canvas.width = Math.floor(viewport.width);
+          canvas.height = Math.floor(viewport.height);
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          await page.render({ canvasContext: ctx, viewport }).promise;
+
+          const textContent = await page.getTextContent();
+          autoDetectBOCWDataRegion(canvas, textContent, viewport);
+
+          state.hasSourceLoaded = true;
+          state.isDirectCroppedImage = false;
+          syncCropSlidersToUI();
+          processCropAndComposite();
+          setStatus(`ID Card ready from "${file.name}"`, false);
+        } else if (file.type.startsWith('image/')) {
+          const img = await loadImageFromFile(file);
+          const canvas = state.sourcePageCanvas;
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+
+          const aspect = canvas.width / canvas.height;
+          if (aspect > 1.75 && aspect < 3.2) {
+            state.crop = { top: 0.5, bottom: 99.5, left: 0.5, right: 99.5 };
+            state.isDirectCroppedImage = true;
+          } else {
+            autoDetectBOCWDataRegion(canvas, null, null);
+            state.isDirectCroppedImage = false;
+          }
+
+          state.hasSourceLoaded = true;
+          state.extractedFileName = file.name.replace(/\.[^.]+$/, '');
+          updateDetectedBadge();
+          syncCropSlidersToUI();
+          processCropAndComposite();
+          setStatus(`ID Card ready from "${file.name}"`, false);
+        }
+      } catch (err) {
+        console.error('File read error:', err);
+        setStatus(`Error reading file: ${err.message || 'Please upload a valid file.'}`, false);
+      }
+    }
+
+    function autoDetectBOCWDataRegion(canvas, textContent, viewport) {
+      const W = canvas.width;
+      const H = canvas.height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      const imgData = ctx.getImageData(0, 0, W, H).data;
+
+      let regNoFound = '';
+      let nameFound = '';
+      let textTopY = null;
+      let textBottomY = null;
+      let textLeftX = null;
+
+      if (textContent && textContent.items && viewport) {
+        const fullTextList = [];
+        for (const item of textContent.items) {
+          const str = (item.str || '').trim();
+          if (!str) continue;
+          fullTextList.push(str);
+
+          const tx = item.transform[4];
+          const ty = item.transform[5];
+          const [vx, vy] = viewport.convertToViewportPoint(tx, ty);
+          const fontH = Math.abs(item.transform[3] * viewport.scale) || 24;
+
+          if (vy < H * 0.05 || vy > H * 0.93) continue;
+          if (str.includes('Firefox') || str.includes('https://') || str.includes('of 1')) continue;
+
+          const regMatch = str.match(/MH\d{8,14}/i);
+          if (regMatch) regNoFound = regMatch[0].toUpperCase();
+
+          if (str.includes('नोंदणी') || str.includes('MH1') || str.includes('MH0') || str.includes('MH2')) {
+            if (textTopY === null || vy - fontH < textTopY) textTopY = vy - fontH * 1.15;
+          }
+
+          if (str.includes('नोंदणी') || str.includes('नाव') || str.includes('लिंग') || str.includes('जन्म') || str.includes('कामाचा')) {
+            if (textLeftX === null || vx < textLeftX) textLeftX = vx;
+          }
+
+          if (str.includes('ठिकाण') || str.includes('जिल्हा') || str.includes('कामाचा')) {
+            if (textBottomY === null || vy + fontH * 0.45 > textBottomY) textBottomY = vy + fontH * 0.45;
+          }
+        }
+
+        const joined = fullTextList.join(' ');
+        if (!regNoFound) {
+          const m = joined.match(/MH\d{8,14}/i);
+          if (m) regNoFound = m[0].toUpperCase();
+        }
+        const nameMatch = joined.match(/नाव[:ः]\s*([^\n\r]+?)(?:\s+लिंग|$)/);
+        if (nameMatch && nameMatch[1]) nameFound = nameMatch[1].trim();
+      }
+
+      if (regNoFound) {
+        state.extractedRegNo = regNoFound;
+        state.extractedFileName = regNoFound;
+        updateDetectedBadge(nameFound ? `${regNoFound} • ${nameFound}` : regNoFound);
+      }
+
+      const scanYStart = Math.floor(H * 0.045);
+      const scanYEnd = Math.floor(H * 0.92);
+      const scanXStart = Math.floor(W * 0.03);
+      const scanXEnd = Math.floor(W * 0.97);
+
+      const isNonWhite = (x, y) => {
+        const idx = (y * W + x) * 4;
+        return imgData[idx] < 240 || imgData[idx + 1] < 240 || imgData[idx + 2] < 240;
+      };
+
+      const rowCounts = new Int32Array(H);
+      for (let y = scanYStart; y < scanYEnd; y++) {
+        let count = 0;
+        for (let x = scanXStart; x < scanXEnd; x += 2) {
+          if (isNonWhite(x, y)) count++;
+        }
+        rowCounts[y] = count;
+      }
+
+      let islandTop = scanYStart;
+      while (islandTop < scanYEnd && rowCounts[islandTop] < 5) islandTop++;
+      let islandBottom = scanYEnd;
+      while (islandBottom > islandTop && rowCounts[islandBottom] < 5) islandBottom--;
+
+      const islandHeight = Math.max(100, islandBottom - islandTop);
+      const halfSpanThreshold = (scanXEnd - scanXStart) * 0.18;
+      let dividerY = null;
+      for (let y = islandTop + Math.floor(islandHeight * 0.06); y < islandTop + Math.floor(islandHeight * 0.28); y++) {
+        if (rowCounts[y] > halfSpanThreshold) dividerY = y;
+      }
+
+      let finalTopY = textTopY !== null && textTopY > islandTop ? textTopY : (dividerY !== null ? dividerY + Math.floor(islandHeight * 0.025) : islandTop + Math.floor(islandHeight * 0.145));
+      let finalBottomY = textBottomY !== null ? Math.max(islandBottom - 10, Math.floor(textBottomY)) : islandBottom;
+
+      const colCounts = new Int32Array(W);
+      for (let x = scanXStart; x < scanXEnd; x++) {
+        let count = 0;
+        for (let y = Math.floor(finalTopY); y <= Math.floor(finalBottomY); y += 2) {
+          if (isNonWhite(x, y)) count++;
+        }
+        colCounts[x] = count;
+      }
+
+      let finalLeftX = scanXStart;
+      while (finalLeftX < scanXEnd && colCounts[finalLeftX] < 2) finalLeftX++;
+      if (textLeftX !== null && textLeftX > finalLeftX && textLeftX < W * 0.35) finalLeftX = Math.min(finalLeftX, textLeftX);
+
+      let finalRightX = scanXEnd;
+      while (finalRightX > finalLeftX && colCounts[finalRightX] < 2) finalRightX--;
+
+      state.crop.left = Number(((Math.max(0, finalLeftX - 10) / W) * 100).toFixed(2));
+      state.crop.top = Number(((Math.max(0, finalTopY - 10) / H) * 100).toFixed(2));
+      state.crop.right = Number(((Math.min(W, finalRightX + 10) / W) * 100).toFixed(2));
+      state.crop.bottom = Number(((Math.min(H, finalBottomY + 10) / H) * 100).toFixed(2));
+    }
+
+    // =========================================================================
+    // 3. TRANSPARENCY REMOVAL
+    // =========================================================================
+    function processCropAndComposite() {
+      if (!state.hasSourceLoaded) return;
+
+      const srcCanvas = state.sourcePageCanvas;
+      const srcW = srcCanvas.width;
+      const srcH = srcCanvas.height;
+
+      const cx = Math.max(0, Math.floor((state.crop.left / 100) * srcW));
+      const cy = Math.max(0, Math.floor((state.crop.top / 100) * srcH));
+      const cw = Math.max(20, Math.min(srcW - cx, Math.floor(((state.crop.right - state.crop.left) / 100) * srcW)));
+      const ch = Math.max(20, Math.min(srcH - cy, Math.floor(((state.crop.bottom - state.crop.top) / 100) * srcH)));
+
+      const cropCanvas = document.getElementById('croppedTransparentCanvas');
+      cropCanvas.width = cw;
+      cropCanvas.height = ch;
+      const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
+
+      cropCtx.drawImage(srcCanvas, cx, cy, cw, ch, 0, 0, cw, ch);
+
+      const imgDataObj = cropCtx.getImageData(0, 0, cw, ch);
+      const data = imgDataObj.data;
+      const threshold = state.whiteThreshold;
+      const softRange = 22;
+      const contrast = state.contrastBoost;
+
+      for (let y = 0; y < ch; y++) {
+        for (let x = 0; x < cw; x++) {
+          const i = (y * cw + x) * 4;
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+          if (lum >= threshold) {
+            data[i + 3] = 0;
+          } else if (lum >= threshold - softRange) {
+            const factor = (threshold - lum) / softRange;
+            data[i + 3] = Math.round(255 * Math.pow(factor, 1.15));
+            data[i] = Math.max(0, Math.round(r * 0.55));
+            data[i + 1] = Math.max(0, Math.round(g * 0.55));
+            data[i + 2] = Math.max(0, Math.round(b * 0.55));
+          } else {
+            if (contrast > 1.0) {
+              data[i] = Math.max(0, Math.min(255, Math.round((r - 128) * contrast + 128 - 15)));
+              data[i + 1] = Math.max(0, Math.min(255, Math.round((g - 128) * contrast + 128 - 15)));
+              data[i + 2] = Math.max(0, Math.min(255, Math.round((b - 128) * contrast + 128 - 15)));
+            }
+          }
+        }
+      }
+
+      cropCtx.putImageData(imgDataObj, 0, 0);
+      renderAllCardOutputs();
+    }
+
+    // =========================================================================
+    // 4. RENDERING ENGINE (COMBINING frontb.jpg + CROPPED PDF AREA)
+    // =========================================================================
+    function renderAllCardOutputs(excludeGuide = false) {
+      const pvcFront = document.getElementById('pvcFrontCanvas');
+      const pvcBack = document.getElementById('pvcBackCanvas');
+      const fctx = pvcFront.getContext('2d');
+      const bctx = pvcBack.getContext('2d');
+
+      fctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+      if (state.frontBoBase64Img) {
+        fctx.drawImage(state.frontBoBase64Img, 0, 0, CARD_WIDTH, CARD_HEIGHT);
+      }
+
+      const cropCanvas = document.getElementById('croppedTransparentCanvas');
+      if (state.hasSourceLoaded && cropCanvas.width > 0 && cropCanvas.height > 0) {
+        const destX = (state.placement.x / 100) * CARD_WIDTH;
+        const destY = (state.placement.y / 100) * CARD_HEIGHT;
+        const destW = (state.placement.w / 100) * CARD_WIDTH;
+        const destH = (state.placement.h / 100) * CARD_HEIGHT;
+        fctx.drawImage(cropCanvas, destX, destY, destW, destH);
+      }
+
+      bctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+      if (state.backBoBase64Img) {
+        bctx.drawImage(state.backBoBase64Img, 0, 0, CARD_WIDTH, CARD_HEIGHT);
+      }
+
+      const master = document.getElementById('finalCombinedCanvas');
+      const mctx = master.getContext('2d');
+      mctx.clearRect(0, 0, master.width, master.height);
+
+      mctx.fillStyle = '#ffffff';
+      mctx.fillRect(0, 0, master.width, master.height);
+
+      mctx.drawImage(pvcFront, 0, 0, CARD_WIDTH, CARD_HEIGHT);
+      const backStartX = CARD_WIDTH + COMBINED_FOLD_GAP;
+      mctx.drawImage(pvcBack, backStartX, 0, CARD_WIDTH, CARD_HEIGHT);
+
+      mctx.save();
+      mctx.setLineDash([6, 6]);
+      mctx.strokeStyle = '#94a3b8';
+      mctx.lineWidth = 1.5;
+      mctx.beginPath();
+      mctx.moveTo(CARD_WIDTH + (COMBINED_FOLD_GAP / 2), 0);
+      mctx.lineTo(CARD_WIDTH + (COMBINED_FOLD_GAP / 2), CARD_HEIGHT);
+      mctx.stroke();
+      mctx.restore();
+
+      if (!excludeGuide && state.hasSourceLoaded && (state.showGuide || state.dragging)) {
+        const destX = (state.placement.x / 100) * CARD_WIDTH;
+        const destY = (state.placement.y / 100) * CARD_HEIGHT;
+        const destW = (state.placement.w / 100) * CARD_WIDTH;
+        const destH = (state.placement.h / 100) * CARD_HEIGHT;
+        mctx.save();
+        mctx.strokeStyle = '#ea580c';
+        mctx.lineWidth = 2.5;
+        mctx.setLineDash([8, 6]);
+        mctx.strokeRect(destX, destY, destW, destH);
+        mctx.restore();
+      }
+
+      const prevF = document.getElementById('previewPvcFront');
+      const prevB = document.getElementById('previewPvcBack');
+      if (prevF && prevB) {
+        prevF.getContext('2d').drawImage(pvcFront, 0, 0);
+        prevB.getContext('2d').drawImage(pvcBack, 0, 0);
+      }
+
+      renderA4SheetCanvas(pvcFront, pvcBack);
+      render4x6SheetCanvas(pvcFront, pvcBack);
+    }
+
+    function renderA4SheetCanvas(pvcFront, pvcBack) {
+      const a4 = document.getElementById('a4SheetCanvas');
+      const ctx = a4.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, A4_WIDTH_PX, A4_HEIGHT_PX);
+
+      const cardW = SINGLE_CARD_W_300DPI;
+      const cardH = SINGLE_CARD_H_300DPI;
+      const gapW = FOLD_GAP_300DPI;
+
+      const totalW = (cardW * 2) + gapW;
+      const startX = Math.round((A4_WIDTH_PX - totalW) / 2);
+      const startY = Math.round(1.8 * PX_PER_CM_300DPI);
+
+      ctx.drawImage(pvcFront, startX, startY, cardW, cardH);
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(startX, startY, cardW, cardH);
+
+      const backX = startX + cardW + gapW;
+      ctx.drawImage(pvcBack, backX, startY, cardW, cardH);
+      ctx.strokeRect(backX, startY, cardW, cardH);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.setLineDash([10, 8]);
+      const foldX = startX + cardW + (gapW / 2);
+      ctx.moveTo(foldX, startY - 20);
+      ctx.lineTo(foldX, startY + cardH + 20);
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+
+      drawCornerCutMarks(ctx, startX, startY, totalW, cardH, 32);
+
+      const prevA4 = document.getElementById('previewA4Canvas');
+      if (prevA4) {
+        const pctx = prevA4.getContext('2d');
+        pctx.clearRect(0, 0, prevA4.width, prevA4.height);
+        pctx.drawImage(a4, 0, 0, prevA4.width, prevA4.height);
+      }
+    }
+
+    function render4x6SheetCanvas(pvcFront, pvcBack) {
+      const sheet = document.getElementById('photo4x6Canvas');
+      const ctx = sheet.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, PHOTO_4X6_W_PX, PHOTO_4X6_H_PX);
+
+      const cardW = SINGLE_CARD_W_300DPI;
+      const cardH = SINGLE_CARD_H_300DPI;
+      const gapH = FOLD_GAP_300DPI;
+
+      const totalH = (cardH * 2) + gapH;
+      const startX = Math.round((PHOTO_4X6_W_PX - cardW) / 2);
+      const startY = Math.round((PHOTO_4X6_H_PX - totalH) / 2);
+
+      ctx.drawImage(pvcFront, startX, startY, cardW, cardH);
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(startX, startY, cardW, cardH);
+
+      const backY = startY + cardH + gapH;
+      ctx.save();
+      ctx.translate(startX + cardW / 2, backY + cardH / 2);
+      ctx.rotate(Math.PI);
+      ctx.drawImage(pvcBack, -cardW / 2, -cardH / 2, cardW, cardH);
+      ctx.restore();
+      ctx.strokeRect(startX, backY, cardW, cardH);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.setLineDash([10, 8]);
+      const foldY = startY + cardH + (gapH / 2);
+      ctx.moveTo(startX - 20, foldY);
+      ctx.lineTo(startX + cardW + 20, foldY);
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+
+      drawCornerCutMarks(ctx, startX, startY, cardW, totalH, 24);
+
+      const prev4x6 = document.getElementById('preview4x6Canvas');
+      if (prev4x6) {
+        const pctx = prev4x6.getContext('2d');
+        pctx.clearRect(0, 0, prev4x6.width, prev4x6.height);
+        pctx.drawImage(sheet, 0, 0, prev4x6.width, prev4x6.height);
+      }
+    }
+
+    function drawCornerCutMarks(ctx, x, y, w, h, len) {
+      ctx.save();
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2;
+      const gap = 8;
+      ctx.beginPath();
+      ctx.moveTo(x - gap - len, y); ctx.lineTo(x - gap, y);
+      ctx.moveTo(x, y - gap - len); ctx.lineTo(x, y - gap);
+      ctx.moveTo(x + w + gap, y); ctx.lineTo(x + w + gap + len, y);
+      ctx.moveTo(x + w, y - gap - len); ctx.lineTo(x + w, y - gap);
+      ctx.moveTo(x - gap - len, y + h); ctx.lineTo(x - gap, y + h);
+      ctx.moveTo(x, y + h + gap); ctx.lineTo(x, y + h + gap + len);
+      ctx.moveTo(x + w + gap, y + h); ctx.lineTo(x + w + gap + len, y + h);
+      ctx.moveTo(x + w, y + h + gap); ctx.lineTo(x + w, y + h + gap + len);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // =========================================================================
+    // 5. DOWNLOAD & PHYSICAL PRINT ENGINE (ROBUST QUEUE + UNTAINTED EXPORT)
+    // =========================================================================
+    function getBaseFileName() {
+      return state.extractedRegNo || state.extractedFileName || 'MahaBOCW_ID_Card';
+    }
+
+    function untaintCanvases() {
+      ['pvcFrontCanvas', 'pvcBackCanvas', 'finalCombinedCanvas', 'a4SheetCanvas', 'photo4x6Canvas'].forEach(id => {
+        const c = document.getElementById(id);
+        if (c && c.width > 0) {
+          c.width = c.width; 
+        }
+      });
+    }
+
+    const downloadQueue = [];
+    let downloadQueueRunning = false;
+
+    function isCanvasTainted(canvas) {
+      try {
+        const probe = document.createElement('canvas');
+        probe.width = 1;
+        probe.height = 1;
+        probe.getContext('2d').drawImage(canvas, 0, 0, 1, 1);
+        probe.toDataURL('image/png');
+        return false;
+      } catch (e) {
+        return true;
+      }
+    }
+
+    function dataUrlToBlob(dataUrl) {
+      const parts = String(dataUrl).split(',');
+      const mimeMatch = parts[0].match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+      const bin = atob(parts[1]);
+      const arr = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      return new Blob([arr], { type: mime });
+    }
+
+    function canvasToBlobPromise(canvas, mime, quality) {
+      return new Promise((resolve) => {
+        try {
+          if (typeof canvas.toBlob === 'function') {
+            canvas.toBlob((blob) => resolve(blob), mime, quality);
+          } else {
+            resolve(dataUrlToBlob(canvas.toDataURL(mime, quality)));
+          }
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    }
+
+    async function buildExportBlob(canvas, format) {
+      const mime = format === 'jpg' ? 'image/jpeg' : 'image/png';
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = canvas.width;
+      exportCanvas.height = canvas.height;
+      const ectx = exportCanvas.getContext('2d');
+
+      if (format === 'jpg') {
+        ectx.fillStyle = '#ffffff';
+        ectx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+      }
+      ectx.drawImage(canvas, 0, 0);
+
+      let blob = await canvasToBlobPromise(exportCanvas, mime, 0.96);
+      if (!blob) {
+        try {
+          blob = dataUrlToBlob(exportCanvas.toDataURL(mime, 0.96));
+        } catch (e) {
+          blob = null;
+        }
+      }
+      return blob;
+    }
+
+    function saveBlobAsFile(blob, filename) {
+      if (!(blob instanceof Blob) || blob.size === 0) {
+        setStatus('Download failed: the generated file is empty. Please try again.', false);
+        return false;
+      }
+
+      // Use a download-only anchor (no target/window.open) so the file is saved,
+      // rather than navigated to in the current tab.
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = String(filename || 'MahaBOCW_ID_Card.png').replace(/[\\\\/:*?"<>|]+/g, '_');
+      link.setAttribute('download', link.download);
+      link.setAttribute('rel', 'noopener');
+      link.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      // Keep the object URL alive long enough for Chrome to begin the download.
+      window.setTimeout(() => {
+        try { URL.revokeObjectURL(url); } catch (e) {}
+      }, 60000);
+      return true;
+    }
+
+    async function executeDownloadJob(job) {
+      renderAllCardOutputs(true);
+      let blob = null;
+      try {
+        blob = await buildExportBlob(job.canvas, job.format);
+      } finally {
+        renderAllCardOutputs(false);
+      }
+
+      if (!blob) return false;
+
+      const ext = job.format === 'jpg' ? 'jpg' : 'png';
+      const saved = saveBlobAsFile(blob, `${getBaseFileName()}${job.fileSuffix}.${ext}`);
+      if (saved) setStatus(`Download started: ${getBaseFileName()}${job.fileSuffix}.${ext}`, false);
+      return saved;
+    }
+
+    async function processDownloadQueue() {
+      if (downloadQueueRunning) return;
+      downloadQueueRunning = true;
+
+      try {
+        while (downloadQueue.length > 0) {
+          const job = downloadQueue[0];
+          const ok = await executeDownloadJob(job);
+
+          if (!ok) {
+            const banner = document.getElementById('taintedBanner');
+            if (banner) banner.classList.remove('hidden');
+            break;
+          }
+
+          downloadQueue.shift();
+          await new Promise((r) => setTimeout(r, 350));
+        }
+      } finally {
+        downloadQueueRunning = false;
+      }
+    }
+
+    async function triggerCanvasDownload(canvas, format, fileSuffix) {
+      const tainted = isCanvasTainted(canvas);
+      const exists = downloadQueue.some(
+        (j) => j.canvas === canvas && j.format === format && j.fileSuffix === fileSuffix
+      );
+      if (!exists) downloadQueue.push({ canvas, format, fileSuffix });
+
+      if (tainted) {
+        // DO NOT open the file picker here. Just notify the user.
+        document.getElementById('taintedBanner').classList.remove('hidden');
+        setStatus("Chrome blocks local file exports. Please click 'Select frontb.jpg' above to unlock downloads.", false);
+        return;
+      }
+
+      const hasTaintedJob = downloadQueue.some((j) => isCanvasTainted(j.canvas));
+      if (!hasTaintedJob) {
+        await processDownloadQueue();
+      }
+    }
+
+    function createPrintableNode(sourceCanvas, widthCss, heightCss) {
+      const cv = document.createElement('canvas');
+      cv.width = sourceCanvas.width;
+      cv.height = sourceCanvas.height;
+      cv.getContext('2d').drawImage(sourceCanvas, 0, 0);
+      cv.style.cssText = `width:${widthCss}; height:${heightCss}; display:block; object-fit:fill;`;
+      return cv;
+    }
+
+    function createRotatedPrintableNode(sourceCanvas, widthCss, heightCss) {
+      const cv = document.createElement('canvas');
+      cv.width = sourceCanvas.width;
+      cv.height = sourceCanvas.height;
+      const c = cv.getContext('2d');
+      c.translate(cv.width / 2, cv.height / 2);
+      c.rotate(Math.PI);
+      c.drawImage(sourceCanvas, -cv.width / 2, -cv.height / 2);
+      cv.style.cssText = `width:${widthCss}; height:${heightCss}; display:block; object-fit:fill;`;
+      return cv;
+    }
+
+    function printCardInMode(mode) {
+      renderAllCardOutputs(true);
+      const printArea = document.getElementById('printArea');
+      const pageStyle = document.getElementById('dynamicPrintPageStyle');
+      printArea.innerHTML = '';
+
+      if (mode === 'a4') {
+        pageStyle.innerHTML = `
+          @media print {
+            @page { size: A4 portrait; margin: 0mm; }
+            html, body {
+              width: 210mm !important;
+              height: 297mm !important;
+              overflow: hidden !important;
+            }
+            #printArea {
+              width: 210mm !important;
+              height: 297mm !important;
+              padding-top: 15mm !important;
+              display: flex !important;
+              flex-direction: row !important;
+              justify-content: center !important;
+              align-items: flex-start !important;
+              overflow: hidden !important;
+              page-break-after: avoid !important;
+            }
+          }
+        `;
+
+        const frontWrap = document.createElement('div');
+        frontWrap.style.cssText = 'width:8.9cm; height:5.8cm; border:0.25mm solid #64748b; box-sizing:border-box; overflow:hidden;';
+        frontWrap.appendChild(createPrintableNode(document.getElementById('pvcFrontCanvas'), '8.9cm', '5.8cm'));
+
+        const foldGap = document.createElement('div');
+        foldGap.style.cssText = 'width:0.1cm; height:5.8cm; border-top:0.25mm dashed #94a3b8; border-bottom:0.25mm dashed #94a3b8; box-sizing:border-box; background:#ffffff;';
+
+        const backWrap = document.createElement('div');
+        backWrap.style.cssText = 'width:8.9cm; height:5.8cm; border:0.25mm solid #64748b; box-sizing:border-box; overflow:hidden;';
+        backWrap.appendChild(createPrintableNode(document.getElementById('pvcBackCanvas'), '8.9cm', '5.8cm'));
+
+        printArea.appendChild(frontWrap);
+        printArea.appendChild(foldGap);
+        printArea.appendChild(backWrap);
+
+      } else if (mode === '4x6') {
+        pageStyle.innerHTML = `
+          @media print {
+            @page { size: 4in 6in portrait; margin: 0mm; }
+            html, body {
+              width: 10.16cm !important;
+              height: 15.24cm !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
+            }
+            #printArea {
+              width: 10.16cm !important;
+              height: 15.24cm !important;
+              display: flex !important;
+              flex-direction: column !important;
+              justify-content: center !important;
+              align-items: center !important;
+              overflow: hidden !important;
+              box-sizing: border-box !important;
+              page-break-inside: avoid !important;
+              page-break-after: avoid !important;
+            }
+          }
+        `;
+
+        const topWrap = document.createElement('div');
+        topWrap.style.cssText = 'width:8.9cm; height:5.8cm; border:0.25mm solid #64748b; box-sizing:border-box; overflow:hidden;';
+        topWrap.appendChild(createPrintableNode(document.getElementById('pvcFrontCanvas'), '8.9cm', '5.8cm'));
+
+        const foldGap = document.createElement('div');
+        foldGap.style.cssText = 'width:8.9cm; height:0.1cm; border-left:0.25mm dashed #94a3b8; border-right:0.25mm dashed #94a3b8; box-sizing:border-box; background:#ffffff;';
+
+        const bottomWrap = document.createElement('div');
+        bottomWrap.style.cssText = 'width:8.9cm; height:5.8cm; border:0.25mm solid #64748b; box-sizing:border-box; overflow:hidden;';
+        bottomWrap.appendChild(createRotatedPrintableNode(document.getElementById('pvcBackCanvas'), '8.9cm', '5.8cm'));
+
+        printArea.appendChild(topWrap);
+        printArea.appendChild(foldGap);
+        printArea.appendChild(bottomWrap);
+
+      } else if (mode === 'pvc') {
+        pageStyle.innerHTML = `
+          @media print {
+            @page { size: 85.6mm 54mm; margin: 0mm; }
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              width: 85.6mm !important;
+              height: auto !important;
+            }
+            .pvc-page {
+              width: 85.6mm !important;
+              height: 54mm !important;
+              box-sizing: border-box !important;
+              overflow: hidden !important;
+              page-break-inside: avoid !important;
+            }
+            .pvc-page-front {
+              page-break-after: always !important;
+            }
+            .pvc-page-back {
+              page-break-after: avoid !important;
+            }
+          }
+        `;
+        const p1 = document.createElement('div');
+        p1.className = 'pvc-page pvc-page-front';
+        p1.appendChild(createPrintableNode(document.getElementById('pvcFrontCanvas'), '85.6mm', '54mm'));
+
+        const p2 = document.createElement('div');
+        p2.className = 'pvc-page pvc-page-back';
+        p2.appendChild(createPrintableNode(document.getElementById('pvcBackCanvas'), '85.6mm', '54mm'));
+
+        printArea.appendChild(p1);
+        printArea.appendChild(p2);
+      }
+
+      renderAllCardOutputs(false);
+      setTimeout(() => window.print(), 200);
+    }
+
+    // =========================================================================
+    // 6. UI & LISTENERS
+    // =========================================================================
+    async function handleTemplateFileSelect(file) {
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const dataUrl = reader.result;
+        try {
+          localStorage.setItem('MAHABOCW_FRONT_CACHE_V4', dataUrl);
+        } catch (e) {}
+
+        const img = await loadImageFromDataURL(dataUrl);
+        state.frontBoBase64Img = img;
+        state.isFrontTainted = false;
+
+        untaintCanvases();
+        renderAllCardOutputs();
+        document.getElementById('taintedBanner').classList.add('hidden');
+        setStatus(`Front card template loaded: "${file.name}". Downloads unlocked!`, false);
+
+        if (downloadQueue.length > 0) {
+          processDownloadQueue();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function switchPreviewMode(mode) {
+      state.previewMode = mode;
+      document.querySelectorAll('.preview-mode-btn').forEach((btn) => {
+        if (btn.getAttribute('data-preview') === mode) {
+          btn.className = 'preview-mode-btn bg-white text-orange-600 shadow-sm px-3 py-1.5 rounded-lg transition';
+        } else {
+          btn.className = 'preview-mode-btn text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg transition';
+        }
+      });
+      document.getElementById('previewContainerCombined').classList.toggle('hidden', mode !== 'combined');
+      document.getElementById('previewContainerPVC').classList.toggle('hidden', mode !== 'pvc');
+      document.getElementById('previewContainerA4').classList.toggle('hidden', mode !== 'a4');
+      document.getElementById('previewContainer4x6').classList.toggle('hidden', mode !== '4x6');
+    }
+
+    function loadImageFromFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = reader.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function loadImageFromDataURL(dataUrl) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    }
+
+    function setStatus(msg, isLoading) {
+      document.getElementById('statusText').textContent = msg;
+      const spinner = document.getElementById('statusSpinner');
+      if (isLoading) spinner.classList.remove('hidden');
+      else spinner.classList.add('hidden');
+    }
+
+    function updateDetectedBadge() {
+      const fileLabel = document.getElementById('activeFileNameLabel');
+      if (fileLabel) fileLabel.textContent = state.extractedRegNo || state.extractedFileName || 'MahaBOCW_ID_Card';
+    }
+
+    function syncCropSlidersToUI() {
+      document.getElementById('sliderCropTop').value = state.crop.top;
+      document.getElementById('sliderCropBottom').value = state.crop.bottom;
+      document.getElementById('sliderCropLeft').value = state.crop.left;
+      document.getElementById('sliderCropRight').value = state.crop.right;
+    }
+
+    function syncPlacementSlidersToUI() {
+      document.getElementById('sliderPlaceX').value = state.placement.x;
+      document.getElementById('sliderPlaceY').value = state.placement.y;
+      document.getElementById('sliderPlaceW').value = state.placement.w;
+      document.getElementById('sliderPlaceH').value = state.placement.h;
+    }
+
+    function initEventListeners() {
+      const pdfInput = document.getElementById('pdfFileInput');
+      pdfInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) handleFileUpload(e.target.files[0]);
+      });
+
+      const tplInput = document.getElementById('templateFileInput');
+      if (tplInput) {
+        tplInput.addEventListener('change', (e) => {
+          if (e.target.files && e.target.files[0]) handleTemplateFileSelect(e.target.files[0]);
+        });
+      }
+
+      document.getElementById('btnUnlockDownloads').addEventListener('click', () => {
+        document.getElementById('templateFileInput').click();
+      });
+
+      const dropZone = document.getElementById('pdfDropZone');
+      ['dragenter', 'dragover'].forEach((evt) => {
+        dropZone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          dropZone.classList.add('border-orange-600', 'bg-orange-100/70');
+        });
+      });
+      ['dragleave', 'drop'].forEach((evt) => {
+        dropZone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          dropZone.classList.remove('border-orange-600', 'bg-orange-100/70');
+        });
+      });
+      dropZone.addEventListener('drop', (e) => {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+          handleFileUpload(e.dataTransfer.files[0]);
+        }
+      });
+
+      document.querySelectorAll('.preview-mode-btn').forEach((btn) => {
+        btn.addEventListener('click', () => switchPreviewMode(btn.getAttribute('data-preview')));
+      });
+      document.getElementById('btnPreviewA4Quick').addEventListener('click', () => switchPreviewMode('a4'));
+      document.getElementById('btnPreview4x6Quick').addEventListener('click', () => switchPreviewMode('4x6'));
+
+      ['X', 'Y', 'W', 'H'].forEach((axis) => {
+        const slider = document.getElementById(`sliderPlace${axis}`);
+        slider.addEventListener('input', () => {
+          state.placement[axis.toLowerCase()] = parseFloat(slider.value);
+          syncPlacementSlidersToUI();
+          renderAllCardOutputs();
+        });
+      });
+
+      ['Top', 'Bottom', 'Left', 'Right'].forEach((side) => {
+        const slider = document.getElementById(`sliderCrop${side}`);
+        slider.addEventListener('input', () => {
+          state.crop[side.toLowerCase()] = parseFloat(slider.value);
+          syncCropSlidersToUI();
+          processCropAndComposite();
+        });
+      });
+
+      const masterCanvas = document.getElementById('finalCombinedCanvas');
+      const getCoords = (evt) => {
+        const rect = masterCanvas.getBoundingClientRect();
+        const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+        const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+        return {
+          x: ((clientX - rect.left) / rect.width) * masterCanvas.width,
+          y: ((clientY - rect.top) / rect.height) * masterCanvas.height
+        };
+      };
+
+      const startDrag = (evt) => {
+        const pt = getCoords(evt);
+        if (pt.x <= CARD_WIDTH) {
+          state.dragging = true;
+          state.dragStartX = pt.x;
+          state.dragStartY = pt.y;
+          state.initialPlaceX = state.placement.x;
+          state.initialPlaceY = state.placement.y;
+          renderAllCardOutputs();
+        }
+      };
+
+      const moveDrag = (evt) => {
+        if (!state.dragging) return;
+        evt.preventDefault();
+        const pt = getCoords(evt);
+        const dxPercent = ((pt.x - state.dragStartX) / CARD_WIDTH) * 100;
+        const dyPercent = ((pt.y - state.dragStartY) / CARD_HEIGHT) * 100;
+        state.placement.x = Number(Math.max(-20, Math.min(40, state.initialPlaceX + dxPercent)).toFixed(1));
+        state.placement.y = Number(Math.max(10, Math.min(65, state.initialPlaceY + dyPercent)).toFixed(1));
+        syncPlacementSlidersToUI();
+        renderAllCardOutputs();
+      };
+
+      const endDrag = () => {
+        if (state.dragging) {
+          state.dragging = false;
+          renderAllCardOutputs();
+        }
+      };
+
+      masterCanvas.addEventListener('mousedown', startDrag);
+      window.addEventListener('mousemove', moveDrag);
+      window.addEventListener('mouseup', endDrag);
+
+      masterCanvas.addEventListener('touchstart', startDrag, { passive: true });
+      window.addEventListener('touchmove', moveDrag, { passive: false });
+      window.addEventListener('touchend', endDrag);
+
+      // Download Handlers
+      const dlFrontJPG = () => triggerCanvasDownload(document.getElementById('pvcFrontCanvas'), 'jpg', '_PVC_Front');
+      const dlFrontPNG = () => triggerCanvasDownload(document.getElementById('pvcFrontCanvas'), 'png', '_PVC_Front');
+      const dlBackJPG = () => triggerCanvasDownload(document.getElementById('pvcBackCanvas'), 'jpg', '_PVC_Back');
+      const dlBackPNG = () => triggerCanvasDownload(document.getElementById('pvcBackCanvas'), 'png', '_PVC_Back');
+
+      document.getElementById('btnDownloadPvcFront').addEventListener('click', dlFrontJPG);
+      document.getElementById('btnPvcFrontJPG2').addEventListener('click', dlFrontJPG);
+      document.getElementById('btnDownloadPvcFrontPNG').addEventListener('click', dlFrontPNG);
+      document.getElementById('btnPvcFrontPNG2').addEventListener('click', dlFrontPNG);
+
+      document.getElementById('btnDownloadPvcBack').addEventListener('click', dlBackJPG);
+      document.getElementById('btnPvcBackJPG2').addEventListener('click', dlBackJPG);
+      document.getElementById('btnDownloadPvcBackPNG').addEventListener('click', dlBackPNG);
+      document.getElementById('btnPvcBackPNG2').addEventListener('click', dlBackPNG);
+
+      document.getElementById('btnDownloadPvcBoth').addEventListener('click', () => {
+        triggerCanvasDownload(document.getElementById('pvcFrontCanvas'), 'jpg', '_PVC_Front');
+        triggerCanvasDownload(document.getElementById('pvcBackCanvas'), 'jpg', '_PVC_Back');
+      });
+
+      document.getElementById('btnPrintPVC').addEventListener('click', () => printCardInMode('pvc'));
+      document.getElementById('btnPrintA4').addEventListener('click', () => printCardInMode('a4'));
+      document.getElementById('btnDownloadA4JPG').addEventListener('click', () => triggerCanvasDownload(document.getElementById('a4SheetCanvas'), 'jpg', '_A4_Sheet'));
+      document.getElementById('btnDownloadA4PNG').addEventListener('click', () => triggerCanvasDownload(document.getElementById('a4SheetCanvas'), 'png', '_A4_Sheet'));
+
+      document.getElementById('btnPrint4x6').addEventListener('click', () => printCardInMode('4x6'));
+      document.getElementById('btnDownload4x6JPG').addEventListener('click', () => triggerCanvasDownload(document.getElementById('photo4x6Canvas'), 'jpg', '_4x6_Photo_Sheet'));
+      document.getElementById('btnDownload4x6PNG').addEventListener('click', () => triggerCanvasDownload(document.getElementById('photo4x6Canvas'), 'png', '_4x6_Photo_Sheet'));
+
+      document.getElementById('btnDownloadJPG').addEventListener('click', () => triggerCanvasDownload(document.getElementById('finalCombinedCanvas'), 'jpg', '_Combined_ID'));
+      document.getElementById('btnDownloadPNG').addEventListener('click', () => triggerCanvasDownload(document.getElementById('finalCombinedCanvas'), 'png', '_Combined_ID'));
+    }
+
+    // =========================================================================
+    // INITIALIZATION
+    // =========================================================================
+    window.onload = async function () {
+      await initFrontAndBackTemplates();
+      initEventListeners();
+      renderAllCardOutputs();
+    };
+  </script>
+</body>
+</html>
