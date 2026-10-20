@@ -562,14 +562,18 @@
 
     .passport-a4-sheet {
       background: white; margin: 0 auto;
-      width: var(--pass-paper-width, 210mm); min-height: var(--pass-paper-min-height, 297mm);
+      width: var(--pass-paper-width, 210mm);
+      min-height: var(--pass-paper-min-height, 297mm);
+      height: auto;
       padding: var(--page-margin-top, 5mm) var(--page-margin-right, 5mm) var(--page-margin-bottom, 5mm) var(--page-margin-left, 5mm);
       display: grid; align-content: start; justify-content: start;
-      grid-template-columns: repeat(auto-fill, var(--photo-width, 3.2cm));
-      grid-gap: 2mm; box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+      grid-template-columns: repeat(var(--pass-cols, auto-fill), var(--photo-width, 3.1cm));
+      grid-gap: var(--pass-gap, 2mm); box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+      box-sizing: border-box;
+      overflow: hidden;
     }
     .passport-item {
-      width: var(--photo-width, 3.2cm); height: var(--photo-height, 4.0cm);
+      width: var(--photo-width, 3.1cm); height: var(--photo-height, 3.8cm);
       overflow: hidden; position: relative; background: #ffffff; box-sizing: border-box;
     }
     .passport-item canvas { width: 100%; height: 100%; display: block; }
@@ -842,8 +846,10 @@
         background: #ffffff !important;
         padding: 0 !important;
         margin: 0 !important;
-        width: 210mm !important;
-        height: 297mm !important;
+        width: auto !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: hidden !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -865,13 +871,19 @@
       .ac-margins-guide,
       .ac-res-h,
       .ac-dim-badge,
-      .ac-action-bar { 
+      .ac-action-bar,
+      .landing-hero,
+      .landing-cards-grid,
+      #landingSection,
+      #bgaiSection,
+      #jointSection,
+      #dynamicModuleSection { 
         display: none !important; 
       }
       
       .app-container {
-        max-width: 100% !important;
-        width: 210mm !important;
+        max-width: none !important;
+        width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
         gap: 0 !important;
@@ -895,11 +907,11 @@
         background: transparent !important;
         padding: 0 !important;
         margin: 0 !important;
-        overflow: visible !important;
+        overflow: hidden !important;
         display: block !important;
       }
 
-      /* PASSPORT PRINT MODE: Exact physical dimensions */
+      /* PASSPORT PRINT MODE: Exact physical dimensions — one page only */
       body.mode-passport #passportSection { 
         display: block !important; 
         margin: 0 !important; 
@@ -912,28 +924,44 @@
         display: none !important; 
       }
 
+      body.mode-passport .card,
+      body.mode-passport .studio-container,
+      body.mode-passport .a4-preview-wrapper {
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        overflow: hidden !important;
+      }
       body.mode-passport .passport-a4-sheet { 
         box-shadow: none !important; 
         margin: 0 !important; 
         width: var(--pass-paper-width, 210mm) !important;
-        min-height: var(--pass-paper-min-height, 297mm) !important;
+        height: var(--pass-paper-min-height, 297mm) !important;
+        min-height: 0 !important;
+        max-height: var(--pass-paper-min-height, 297mm) !important;
         padding: var(--page-margin-top, 5mm) var(--page-margin-right, 5mm) var(--page-margin-bottom, 5mm) var(--page-margin-left, 5mm) !important;
         display: grid !important;
-        grid-template-columns: repeat(auto-fill, var(--photo-width, 3.2cm)) !important;
-        grid-gap: 2mm !important;
+        grid-template-columns: repeat(var(--pass-cols, auto-fill), var(--photo-width, 3.1cm)) !important;
+        grid-gap: var(--pass-gap, 2mm) !important;
         justify-content: start !important;
         align-content: start !important;
         page-break-after: avoid !important;
         page-break-inside: avoid !important;
+        break-after: avoid !important;
+        break-inside: avoid !important;
+        overflow: hidden !important;
       }
 
       .passport-item {
-        width: var(--photo-width, 3.2cm) !important;
-        height: var(--photo-height, 4.0cm) !important;
-        flex: 0 0 var(--photo-width, 3.2cm) !important;
+        width: var(--photo-width, 3.1cm) !important;
+        height: var(--photo-height, 3.8cm) !important;
+        flex: 0 0 var(--photo-width, 3.1cm) !important;
         box-sizing: border-box !important;
         overflow: hidden !important;
         page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
 
       .passport-item canvas {
@@ -945,14 +973,29 @@
       }
 
       /* SMART ID PRINT MODE */
-      body.mode-id #smartIdSection { display: block !important; margin: 0 !important; }
+      body.mode-id #smartIdSection { display: block !important; margin: 0 !important; padding: 0 !important; }
       body.mode-id #passportSection, body.mode-id #bgaiSection, body.mode-id #cropperSection, body.mode-id #landingSection { display: none !important; }
+      body.mode-id .card,
+      body.mode-id .a4-preview-wrapper {
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        overflow: hidden !important;
+      }
       body.mode-id .a4-sheet { 
         box-shadow: none !important; 
         margin: 0 !important; 
-        width: 210mm !important;
-        min-height: 297mm !important;
+        width: var(--id-paper-width, 210mm) !important;
+        height: var(--id-paper-height, 297mm) !important;
+        min-height: 0 !important;
+        max-height: var(--id-paper-height, 297mm) !important;
         padding: var(--page-margin-top, 5mm) var(--page-margin-right, 5mm) var(--page-margin-bottom, 5mm) var(--page-margin-left, 5mm) !important;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+        break-after: avoid !important;
+        overflow: hidden !important;
       }
      
       body.mode-cropper .ac-paper {
@@ -975,53 +1018,68 @@
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
-      /* CROPPER PRINT MODE - DIRECT AND RELIABLE */
-      body.mode-cropper #cropperSection {
+      /* CROPPER: hide UI; print only via #acPrintHost (iframe fallback also used) */
+      body.mode-cropper #cropperSection,
+      body.mode-cropper #smartIdSection,
+      body.mode-cropper #passportSection,
+      body.mode-cropper #bgaiSection,
+      body.mode-cropper #landingSection,
+      body.mode-cropper #jointSection,
+      body.mode-cropper #dynamicModuleSection,
+      body.mode-cropper .app-container,
+      body.mode-cropper .site-top-header,
+      body.mode-cropper .footer-attribution,
+      body.mode-cropper .top-guide-bar,
+      body.mode-cropper .hindi-help-toast,
+      body.mode-cropper .seo-article-card,
+      body.mode-cropper .site-footer,
+      body.mode-cropper .adsense-container,
+      body.mode-cropper .ilp-overlay,
+      body.mode-cropper .ilp-fab {
+        display: none !important;
+      }
+      body.mode-cropper #acPrintHost {
         display: block !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-      body.mode-cropper #smartIdSection, 
-      body.mode-cropper #passportSection, 
-      body.mode-cropper #bgaiSection, 
-      body.mode-cropper #landingSection { 
-        display: none !important; 
-      }
-      body.mode-cropper .ac-layout {
-        display: block !important;
-        margin: 0 !important;
-      }
-      body.mode-cropper .ac-stage {
-        background: transparent !important;
-        border: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        box-shadow: none !important;
-      }
-      body.mode-cropper .ac-a4outer {
-        background: transparent !important;
-        border: none !important;
-        padding: 0 !important;
-        min-height: 297mm !important;
-        overflow: visible !important;
-      }
-      body.mode-cropper .ac-a4fit {
-        transform: none !important;
-      }
-      body.mode-cropper .ac-paper {
-        box-shadow: none !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
         width: 210mm !important;
-        height: 296mm !important;
+        height: 297mm !important;
         margin: 0 !important;
-        position: relative !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        background: #fff !important;
       }
-      body.mode-cropper .ac-print-box {
+      body.mode-cropper #acPrintHost .ac-paper {
+        width: 210mm !important;
+        height: 297mm !important;
+        max-width: 210mm !important;
+        max-height: 297mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: 0 !important;
+        position: relative !important;
+        overflow: hidden !important;
+        background: #fff !important;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      body.mode-cropper #acPrintHost .ac-print-box {
         outline: none !important;
         box-shadow: none !important;
+        page-break-inside: avoid !important;
       }
-      body.mode-cropper .ac-cut-guide .ac-print-box {
+      body.mode-cropper #acPrintHost .ac-cut-guide .ac-print-box {
         outline: 1px dashed #cbd5e1 !important;
       }
+      body.mode-cropper #acPrintHost .ac-margins-guide,
+      body.mode-cropper #acPrintHost .ac-res-h,
+      body.mode-cropper #acPrintHost .ac-dim-badge,
+      body.mode-cropper #acPrintHost .ac-action-bar {
+        display: none !important;
+      }
+
     }
 
     @media (max-width: 850px) {
@@ -1143,21 +1201,37 @@
             <span>➔</span>
           </div>
         </div>
-        <div class="landing-hub-card" onclick="switchSuiteSection('farmer')">
+        <div class="landing-hub-card" onclick="switchSuiteSection('joint')">
           <div>
             <div class="l-card-top">
-              <div class="l-card-icon" style="background:#f0fdf4; color:#15803d;">🌾</div>
-              <span class="l-badge-pill" style="background:#dcfce7; color:#166534;">Print Ready</span>
+              <div class="l-card-icon" style="background:#fdf4ff; color:#a21caf;">👨‍👩‍👧</div>
+              <span class="l-badge-pill" style="background:#fae8ff; color:#86198f;">Joint Passport</span>
             </div>
-            <h3>Farmer ID Maker</h3>
-            <p>शेतकरी ओळखपत्र बनवा — 9×6 cm फ्रंट + बॅक, कॉम्बाइंड 18×6 cm प्रिंट. JPG डाउनलोड करा.</p>
+            <h3>Joint Passport Photo Maker</h3>
+            <p>Create combined / joint passport-size photos on one sheet. Upload photos, arrange, and print at Ultra 300 DPI.</p>
           </div>
-          <div class="l-card-btn" style="color:#15803d;">
-            <span>Open Farmer ID</span>
+          <div class="l-card-btn" style="color:#a21caf;">
+            <span>Open Joint Photo</span>
             <span>➔</span>
           </div>
         </div>
-      </div>
+
+       <div class="landing-hub-card" role="link" tabindex="0"
+     onclick="openBandhkamModule()"
+     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openBandhkamModule();}">
+          <div>
+            <div class="l-card-top">
+              <div class="l-card-icon" style="background:#fff7ed;color:#c2410c;">🪪</div>
+              <span class="l-badge-pill" style="background:#ffedd5;color:#9a3412;">MAHA BOCW</span>
+            </div>
+            <h3>Bandhkam Kamgar Card</h3>
+            <p>Upload the card details and prepare the MahaBOCW / Bandhkam Kamgar ID card using the dedicated card maker.</p>
+          </div>
+          <div class="l-card-btn" style="color:#c2410c;">
+            <span>Open Bandhkam Kamgar Card</span><span>➔</span>
+          </div>
+        </div>
+</div>
     </section>
 
     <!-- MODULE: AUTOCROPPER PRO -->
@@ -1376,7 +1450,7 @@
         </div>
 
         <div class="controls">
-          <input type="file" id="pdfInput" accept="application/pdf,image/png,image/jpeg,image/jpg,image/webp">
+          <input type="file" id="pdfInput" accept="application/pdf,application/x-pdf,.pdf,image/png,image/jpeg,image/jpg,image/webp,image/*">
           <button id="rotateBtn" class="secondary" disabled title="Rotate 90°">↻ Rotate</button>
           <button id="pageToggleBtn" class="secondary" style="display:none;">📄 Page 1</button>
 
@@ -1441,19 +1515,34 @@
 
           <div class="config-panel">
             <div class="sub-box">
-              <p class="section-title">📐 output size &amp; proportions</p>
+              <p class="section-title">📐 Print Mode — Choose Paper Type</p>
+              <div style="display:grid; grid-template-columns:1fr; gap:8px; margin-bottom:10px;">
+                <button type="button" id="btnModeA4" class="id-mode-btn active" data-mode="a4" style="padding:12px 10px; font-size:13.5px; font-weight:800; border-radius:12px; border:2px solid #2563eb; background:linear-gradient(135deg,#1e3a8a,#2563eb); color:#fff; cursor:pointer; text-align:center;">
+                  📄 A4 PAPER<br><small style="font-weight:500;opacity:.9;">Standard Open Card 17.5×5.8 cm · Fold Line</small>
+                </button>
+                <button type="button" id="btnMode4x6" class="id-mode-btn" data-mode="4x6" style="padding:12px 10px; font-size:13.5px; font-weight:800; border-radius:12px; border:2px solid #cbd5e1; background:#f8fafc; color:#334155; cursor:pointer; text-align:center;">
+                  🖼️ 4×6 PAPER<br><small style="font-weight:500;opacity:.9;">Front + Back Upside-Down · Fits 4×6 photo paper</small>
+                </button>
+                <button type="button" id="btnModePVC" class="id-mode-btn" data-mode="pvc" style="padding:12px 10px; font-size:13.5px; font-weight:800; border-radius:12px; border:2px solid #cbd5e1; background:#f8fafc; color:#334155; cursor:pointer; text-align:center;">
+                  🪪 PVC CROPPING<br><small style="font-weight:500;opacity:.9;">Capture Front &amp; Back separately · Save individually</small>
+                </button>
+              </div>
+              <p class="section-title" style="margin-top:6px;">Other sizes</p>
               <select id="sizePreset" style="width:100%;padding:8px;border-radius:12px;border:1px solid #dce2ec;font-size:13px;">
-                <option value="17.0x5.5">Standard ID Card (Open 17.0 × 5.5 cm)</option>
+                <option value="17.5x5.8" selected>Standard ID Card (Open 17.5 × 5.8 cm)</option>
                 <option value="8.5x11.0">Vertical Fold Card (Open 8.5 × 11.0 cm)</option>
                 <option value="8.5x5.4">Single PVC / CR-80 (8.5 × 5.4 cm)</option>
-                <option value="4x6_updown_rot">4×6 Paper: Up/Down with Inverted Back (8.5 × 10.8 cm)</option>
+                <option value="4x6_updown_rot">4×6 Paper: Up/Down with Inverted Back</option>
                 <option value="16.0x5.0">Mini Laminated Slip (16.0 × 5.0 cm)</option>
                 <option value="18.0x6.0">Large Pouch Badge (18.0 × 6.0 cm)</option>
                 <option value="custom">Custom dimensions…</option>
               </select>
               <div class="size-inputs" id="customSizeInputs" style="display:none;margin-top:8px;">
-                <div><label>Width (cm)</label><input type="number" id="customWidth" step="0.1" value="17.0"></div>
-                <div><label>Height (cm)</label><input type="number" id="customHeight" step="0.1" value="5.5"></div>
+                <div><label>Width (cm)</label><input type="number" id="customWidth" step="0.1" value="17.5"></div>
+                <div><label>Height (cm)</label><input type="number" id="customHeight" step="0.1" value="5.8"></div>
+              </div>
+              <div id="pvcSaveHint" style="display:none; margin-top:8px; padding:10px; background:#fef3c7; border:1px solid #f59e0b; border-radius:10px; font-size:12px; color:#92400e; font-weight:600;">
+                🪪 PVC Mode: Capture Front → Capture Back → then use <b>Save Front</b> / <b>Save Back</b> buttons on the preview cards below to download each side separately for PVC printing.
               </div>
             </div>
 
@@ -1489,6 +1578,12 @@
               <label id="centerFoldOption" style="font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;margin-top:8px;">
                 <input type="checkbox" id="centerFoldCheck" checked> ✂️ Center fold line (dotted)
               </label>
+              <div id="foldGapOption" style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                <label for="foldGapCm" style="font-size:12px;font-weight:600;color:#334155;">✂️ Fold gap:</label>
+                <input type="number" id="foldGapCm" value="0.1" min="0" max="1" step="0.05"
+                       style="width:72px;padding:6px 8px;border:1px solid #dce2ec;border-radius:10px;font-size:13px;font-weight:600;">
+                <span style="font-size:11px;color:#64748b;">cm white space at fold</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1533,6 +1628,42 @@
       <div class="a4-preview-wrapper">
         <div class="a4-sheet" id="a4Sheet"></div>
       </div>
+
+      <!-- PVC Front/Back Preview Modal -->
+      <div id="pvcPreviewModal" class="user-modal-overlay no-print" style="display:none; z-index:100020;">
+        <div class="user-modal-card" style="max-width:720px; width:95%;" onclick="event.stopPropagation()">
+          <h2 style="margin:0 0 6px; font-size:18px; font-weight:800; color:#0f172a;">🪪 PVC Card — Front &amp; Back</h2>
+          <p style="margin:0 0 16px; font-size:13px; color:#64748b;">Preview both sides. Save individually or recapture any side.</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+            <div style="text-align:center;">
+              <div style="font-size:12px; font-weight:800; color:#1e40af; margin-bottom:8px;">FRONT</div>
+              <div id="pvcFrontPreviewBox" style="background:#f1f5f9; border:2px solid #cbd5e1; border-radius:12px; min-height:160px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <span style="color:#94a3b8; font-size:13px;">Not captured</span>
+              </div>
+              <div style="display:flex; gap:6px; margin-top:10px; justify-content:center; flex-wrap:wrap;">
+                <button type="button" class="accent" id="pvcSaveFrontBtn" style="padding:6px 12px; font-size:12px;" disabled>💾 Save Front</button>
+                <button type="button" class="secondary" id="pvcRecaptureFrontBtn" style="padding:6px 12px; font-size:12px;">↺ Recapture Front</button>
+              </div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:12px; font-weight:800; color:#be123c; margin-bottom:8px;">BACK</div>
+              <div id="pvcBackPreviewBox" style="background:#f1f5f9; border:2px solid #cbd5e1; border-radius:12px; min-height:160px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <span style="color:#94a3b8; font-size:13px;">Not captured</span>
+              </div>
+              <div style="display:flex; gap:6px; margin-top:10px; justify-content:center; flex-wrap:wrap;">
+                <button type="button" class="accent" id="pvcSaveBackBtn" style="padding:6px 12px; font-size:12px;" disabled>💾 Save Back</button>
+                <button type="button" class="secondary" id="pvcRecaptureBackBtn" style="padding:6px 12px; font-size:12px;">📷 Capture Back</button>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; border-top:1px solid #e2e8f0; padding-top:14px;">
+            <button type="button" class="accent" id="pvcSaveBothBtn" style="padding:10px 18px;" disabled>💾 Save Both</button>
+            <button type="button" class="secondary" id="pvcRecaptureBothBtn" style="padding:10px 18px;">↺ Recapture Both</button>
+            <button type="button" class="secondary" id="pvcAddToSheetBtn" style="padding:10px 18px;">+ Add to Sheet</button>
+            <button type="button" class="secondary" id="pvcClosePreviewBtn" style="padding:10px 18px;">✕ Close</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 2. PASSPORT PHOTO STUDIO -->
@@ -1574,8 +1705,8 @@
             <div class="form-group">
               <label>1. Photo Sizing Specs (cm)</label>
               <div class="size-inputs">
-                <div><label>Width (cm)</label><input type="number" id="passWidthCm" value="3.2" step="0.1"></div>
-                <div><label>Height (cm)</label><input type="number" id="passHeightCm" value="4.0" step="0.1"></div>
+                <div><label>Width (cm)</label><input type="number" id="passWidthCm" value="3.1" step="0.1"></div>
+                <div><label>Height (cm)</label><input type="number" id="passHeightCm" value="3.8" step="0.1"></div>
               </div>
             </div>
 
@@ -1584,8 +1715,8 @@
               <div class="size-inputs">
                 <div><label>Top</label><input type="number" id="passMarginTop" value="5" min="0" max="40"></div>
                 <div><label>Bottom</label><input type="number" id="passMarginBottom" value="5" min="0" max="40"></div>
-                <div><label>Left</label><input type="number" id="passMarginLeft" value="5" min="0" max="40"></div>
-                <div><label>Right</label><input type="number" id="passMarginRight" value="5" min="0" max="40"></div>
+                <div><label>Left</label><input type="number" id="passMarginLeft" value="3" min="0" max="40"></div>
+                <div><label>Right</label><input type="number" id="passMarginRight" value="3" min="0" max="40"></div>
               </div>
             </div>
 
@@ -1753,8 +1884,8 @@
       </div>
     </div>
 
-    <!-- 4. FARMER ID MAKER -->
-    <div id="farmerSection" style="display:none;">
+    <!-- 5. JOINT PASSPORT PHOTO MAKER -->
+    <div id="jointSection" style="display:none;">
       <div class="card no-print" style="margin-bottom: 20px;">
         <div class="top-bar">
           <div style="display: flex; align-items: center; gap: 14px;">
@@ -1762,24 +1893,48 @@
               🏠 Return to Home / Hub
             </button>
             <div>
-              <h2>🌾 Farmer ID Card Maker (9×6 cm)</h2>
-              <small>Front 9×6 cm &bull; Back 9×6 cm &bull; Combined 18×6 cm Print</small>
+              <h2>👨‍👩‍👧 Joint Passport Photo Maker</h2>
+              <small>Combined / Family Passport Photos · Ultra 300 DPI Print Ready</small>
             </div>
           </div>
           <div class="usage-badge">
-            <span>🌾 शेतकरी ओळखपत्र</span>
+            <span>📸 Joint Passport Studio</span>
           </div>
         </div>
       </div>
 
       <div class="card" style="padding:0; overflow:hidden; background:transparent; border:none; box-shadow:none;">
-        <iframe id="farmerFrame"
+        <iframe id="jointFrame"
                 style="width:100%; height:calc(100vh - 200px); min-height:900px; border:0; display:block; background:#eef2f7; border-radius:24px;"
-                title="Farmer ID Maker"></iframe>
+                title="Joint Passport Photo Maker"></iframe>
       </div>
     </div>
+<!-- 6. BANDHKAM KAMGAR / MAHABOCW ID CARD MODULE -->
+<div id="bandhkamSection" style="display:none;">
+  <div class="card no-print" style="margin-bottom: 20px;">
+    <div class="top-bar">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <button class="home-nav-btn" onclick="switchSuiteSection('landing')">
+          🏠 Return to Home / Hub
+        </button>
+        <div>
+          <h2>🪪 Bandhkam Kamgar / MahaBOCW ID Card</h2>
+          <small>Dedicated card maker module</small>
+        </div>
+      </div>
+      <div class="usage-badge">
+        <span>🪪 MAHA BOCW</span>
+      </div>
+    </div>
+  </div>
 
-    <!-- MIDDLE ADSENSE UNIT -->
+  <div class="card" style="padding:0; overflow:hidden; background:transparent; border:none; box-shadow:none;">
+    <iframe id="bandhkamFrame"
+            style="width:100%; height:calc(100vh - 200px); min-height:900px; border:0; display:block; background:#eef2f7; border-radius:24px;"
+            title="Bandhkam Kamgar Card Maker"></iframe>
+  </div>
+</div>
+<!-- MIDDLE ADSENSE UNIT -->
     <div class="adsense-container no-print">
       <span class="ad-label">Advertisement</span>
       <ins class="adsbygoogle"
@@ -1799,7 +1954,7 @@
       <h2>1. Standard ID Card Dimensions &amp; Thermal Pouch Sizing</h2>
       <p>To eliminate air bubbles and edge detachment during hot pouch lamination, printed cards must match the physical pocket boundaries:</p>
       <ul>
-        <li><b>Open Lamination Pouch (17.0 × 5.5 cm):</b> Fits standard thermal lamination pouches (70 × 100 mm / 65 × 95 mm). Front and back sides join horizontally with an exact center fold perforation line.</li>
+        <li><b>Open Lamination Pouch (17.5 × 5.8 cm):</b> Fits standard thermal lamination pouches (70 × 100 mm / 65 × 95 mm). Front and back sides join horizontally with an exact center fold perforation line.</li>
         <li><b>Single CR-80 PVC Card (8.5 × 5.4 cm):</b> Conforms to ISO/IEC 7810 standard dimensions for plastic ID cards, employee badges, and driving licenses.</li>
         <li><b>4×6 Photo Paper Up/Down Inverted Layout:</b> Designed for duplex thermal or inkjet printing on 4×6 photo paper (101.6 × 152.4 mm). The back side prints directly below the front side rotated 180° so that flipping the printed sheet end-over-end aligns the front and back perfectly.</li>
       </ul>
@@ -1919,7 +2074,7 @@
       } else if (type === 'terms') {
         content.innerHTML = `<h2>Terms</h2><p>Tools are free "as is". Users are responsible for dimension verifications before print.</p>`;
       } else if (type === 'contact') {
-        content.innerHTML = `<h2>Contact Us</h2><p>Email: support@iloveprint.in</p>`;
+        content.innerHTML = `<h2>Contact Us</h2><p>Email: sajid110210@gmail.com</p>`;
       }
       overlay.style.display = 'flex';
     }
@@ -2159,8 +2314,11 @@
 
     const DPICM = 118.110236;
     const PDF_RENDER_SCALE = 300 / 72;
+    /* Cap canvas size so large e-EPIC / government PDFs (often 2000+ pts) don't crash browsers */
+    const PDF_MAX_CANVAS_PX = 4200;
 
     let currentPdf = null, currentImage = null, currentPageNum = 1, currentRotation = 0, currentStep = 'idle';
+    let currentPdfRenderScale = PDF_RENDER_SCALE;
     let frontCropData = null, backCropData = null;
     let isDragging = false, startX, startY, endX, endY;
     let isPhotoSelectionMode = false, photoRect = null;
@@ -2309,6 +2467,12 @@
       if (savedCol !== null) cardColGapInput.value = savedCol;
       updateCardSheetGap();
 
+      const savedFoldGap = localStorage.getItem('id_fold_gap_cm');
+      if (savedFoldGap !== null) {
+        const fgEl = document.getElementById('foldGapCm');
+        if (fgEl) fgEl.value = savedFoldGap;
+      }
+
       const smTop = localStorage.getItem('page_margin_top');
       const smBottom = localStorage.getItem('page_margin_bottom');
       const smLeft = localStorage.getItem('page_margin_left');
@@ -2405,7 +2569,10 @@
       });
 
       idZone.addEventListener('drop', e => {
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) processUploadedCardFile(e.dataTransfer.files[0]);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          showHindiToast('📂 फाइल लोड हो रही है...');
+          processUploadedCardFile(e.dataTransfer.files[0]);
+        }
       });
 
       passZone.addEventListener('drop', e => {
@@ -2415,11 +2582,31 @@
     }
 
     function processUploadedCardFile(file) {
-      if (file.type.startsWith('image/')) {
+      const name = (file.name || '').toLowerCase();
+      const isImage = (file.type && file.type.startsWith('image/')) || /\.(png|jpe?g|webp|gif|bmp)$/i.test(name);
+      const isPdf = file.type === 'application/pdf' || file.type === 'application/x-pdf' ||
+        file.type === 'application/octet-stream' || /\.pdf$/i.test(name) ||
+        (!isImage && (!file.type || file.type === ''));
+      if (isImage && !/\.pdf$/i.test(name)) {
         loadImageDocument(file);
       } else {
+        showHindiToast('📄 PDF लोड हो रहा है...');
         const fr = new FileReader();
-        fr.onload = function() { loadPdfDocument(new Uint8Array(this.result)); };
+        fr.onload = function() {
+          try {
+            const bytes = new Uint8Array(this.result);
+            /* Quick magic-byte check so non-PDF blobs fail clearly */
+            const head = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3] || 0);
+            if (head !== '%PDF') {
+              alert('यह फाइल मान्य PDF नहीं लगती। कृपया .pdf फाइल चुनें, या Image (JPG/PNG) अपलोड करें।');
+              return;
+            }
+            loadPdfDocument(bytes);
+          } catch (e) {
+            alert('PDF पढ़ने में समस्या: ' + e.message);
+          }
+        };
+        fr.onerror = function() { alert('फाइल पढ़ नहीं पाई। कृपया दोबारा कोशिश करें।'); };
         fr.readAsArrayBuffer(file);
       }
     }
@@ -2477,8 +2664,22 @@
     async function loadPdfDocument(data) {
       try {
         currentImage = null; currentRotation = 0; currentPageNum = 1; currentZoom = 1.0;
-        const task = pdfjsLib.getDocument({ data });
-        task.onPassword = (cb) => { const pw = prompt('PDF password:'); if (pw) cb(pw); };
+        currentPdfRenderScale = PDF_RENDER_SCALE;
+        // More robust options for e-EPIC / complex government PDFs
+        const task = pdfjsLib.getDocument({
+          data: data,
+          cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+          cMapPacked: true,
+          standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
+          disableFontFace: false,
+          useSystemFonts: true,
+          isEvalSupported: false,
+          verbosity: 0
+        });
+        task.onPassword = (cb, reason) => {
+          const pw = prompt(reason === 1 ? 'PDF is password protected. Enter password:' : 'Incorrect password. Try again:');
+          if (pw) cb(pw); else throw new Error('Password required');
+        };
         currentPdf = await task.promise;
         rotateBtn.disabled = false;
         zoomControlsGroup.style.display = 'inline-flex';
@@ -2487,24 +2688,58 @@
         stageWrapper.style.display = 'grid';
         await renderPage(currentPageNum, true);
         if (currentStep !== 'back') setWorkflowStep('front');
-      } catch(err) { alert('Error: ' + err.message); }
+        showHindiToast('✅ PDF लोड हो गया! Front साइड सेलेक्ट करें।');
+      } catch(err) {
+        console.error('PDF load error:', err);
+        const msg = (err && err.message) ? String(err.message) : String(err);
+        let tip = 'सुझाव: PDF को Image (JPG/PNG) में Convert करके अपलोड करें, या दूसरा PDF try करें।';
+        if (/canvas|size|memory|allocation|width|height/i.test(msg)) {
+          tip = 'यह PDF बहुत बड़ा है (e-EPIC जैसे)। Page को Image में save करके अपलोड करें, या Chrome में फिर से try करें।';
+        }
+        alert('PDF लोड नहीं हो पाया।\n\n' + msg + '\n\n' + tip);
+      }
     }
 
     async function renderPage(pageNum, autoFit = false) {
       if (!currentPdf) return;
       const page = await currentPdf.getPage(pageNum);
-      const viewport = page.getViewport({ scale: PDF_RENDER_SCALE, rotation: currentRotation });
-      pdfCanvas.width = viewport.width; pdfCanvas.height = viewport.height;
-      baseDisplayWidth = viewport.width / 2; baseDisplayHeight = viewport.height / 2;
+
+      /* Full 300 DPI viewport first — then shrink scale if canvas would be huge (e-EPIC etc.) */
+      let scale = PDF_RENDER_SCALE;
+      let viewport = page.getViewport({ scale: scale, rotation: currentRotation });
+      const maxSide = Math.max(viewport.width, viewport.height);
+      if (maxSide > PDF_MAX_CANVAS_PX) {
+        scale = scale * (PDF_MAX_CANVAS_PX / maxSide);
+        viewport = page.getViewport({ scale: scale, rotation: currentRotation });
+      }
+      currentPdfRenderScale = scale;
+
+      /* Guard against browser canvas limit failures */
+      try {
+        pdfCanvas.width = Math.max(1, Math.floor(viewport.width));
+        pdfCanvas.height = Math.max(1, Math.floor(viewport.height));
+      } catch (canvasErr) {
+        /* Fallback: force smaller scale */
+        scale = scale * 0.5;
+        viewport = page.getViewport({ scale: scale, rotation: currentRotation });
+        currentPdfRenderScale = scale;
+        pdfCanvas.width = Math.max(1, Math.floor(viewport.width));
+        pdfCanvas.height = Math.max(1, Math.floor(viewport.height));
+      }
+
+      baseDisplayWidth = viewport.width / 2;
+      baseDisplayHeight = viewport.height / 2;
 
       if (autoFit) {
         const availWidth = container.clientWidth - 50;
-        if (availWidth > 100 && baseDisplayWidth > 0) currentZoom = Math.max(0.4, Math.min(1.3, availWidth / baseDisplayWidth));
+        if (availWidth > 100 && baseDisplayWidth > 0) currentZoom = Math.max(0.25, Math.min(1.3, availWidth / baseDisplayWidth));
       }
       applyZoom(currentZoom, false);
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-      await page.render({ canvasContext: ctx, viewport }).promise;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pdfCanvas.width, pdfCanvas.height);
+      await page.render({ canvasContext: ctx, viewport: viewport }).promise;
       applyLiveCanvasFilters();
       spawnDefaultBox();
     }
@@ -2565,8 +2800,101 @@
       customSizeInputs.style.display = sizePreset.value === 'custom' ? 'grid' : 'none';
       const { isSingle } = getTargetDimensions();
       document.getElementById('centerFoldOption').style.display = isSingle ? 'none' : 'flex';
+      const fgOpt = document.getElementById('foldGapOption');
+      if (fgOpt) fgOpt.style.display = isSingle ? 'none' : 'flex';
       if (currentStep === 'front') setWorkflowStep('front');
+
+      // Sync big mode buttons when user picks from dropdown
+      const v = sizePreset.value;
+      if (v === '17.5x5.8' || v === '8.5x11.0' || v === '16.0x5.0' || v === '18.0x6.0') {
+        currentIdPrintMode = 'a4';
+        document.querySelectorAll('.id-mode-btn').forEach(btn => {
+          const active = btn.dataset.mode === 'a4';
+          btn.classList.toggle('active', active);
+          btn.style.background = active ? 'linear-gradient(135deg,#1e3a8a,#2563eb)' : '#f8fafc';
+          btn.style.color = active ? '#fff' : '#334155';
+          btn.style.borderColor = active ? '#2563eb' : '#cbd5e1';
+        });
+        const hint = document.getElementById('pvcSaveHint');
+        if (hint) hint.style.display = 'none';
+      } else if (v === '4x6_updown_rot') {
+        currentIdPrintMode = '4x6';
+        document.querySelectorAll('.id-mode-btn').forEach(btn => {
+          const active = btn.dataset.mode === '4x6';
+          btn.classList.toggle('active', active);
+          btn.style.background = active ? 'linear-gradient(135deg,#1e3a8a,#2563eb)' : '#f8fafc';
+          btn.style.color = active ? '#fff' : '#334155';
+          btn.style.borderColor = active ? '#2563eb' : '#cbd5e1';
+        });
+        const hint = document.getElementById('pvcSaveHint');
+        if (hint) hint.style.display = 'none';
+      } else if (v === '8.5x5.4') {
+        currentIdPrintMode = 'pvc';
+        document.querySelectorAll('.id-mode-btn').forEach(btn => {
+          const active = btn.dataset.mode === 'pvc';
+          btn.classList.toggle('active', active);
+          btn.style.background = active ? 'linear-gradient(135deg,#1e3a8a,#2563eb)' : '#f8fafc';
+          btn.style.color = active ? '#fff' : '#334155';
+          btn.style.borderColor = active ? '#2563eb' : '#cbd5e1';
+        });
+        const hint = document.getElementById('pvcSaveHint');
+        if (hint) hint.style.display = 'block';
+      } else {
+        // custom or other
+        currentIdPrintMode = 'a4';
+        document.querySelectorAll('.id-mode-btn').forEach(btn => {
+          btn.classList.remove('active');
+          btn.style.background = '#f8fafc';
+          btn.style.color = '#334155';
+          btn.style.borderColor = '#cbd5e1';
+        });
+        const hint = document.getElementById('pvcSaveHint');
+        if (hint) hint.style.display = 'none';
+      }
     };
+
+    /* === 3 BIG MODE BUTTONS: A4 / 4x6 / PVC === */
+    let currentIdPrintMode = 'a4'; // a4 | 4x6 | pvc
+
+    function setIdPrintMode(mode) {
+      currentIdPrintMode = mode;
+      document.querySelectorAll('.id-mode-btn').forEach(btn => {
+        const isActive = btn.dataset.mode === mode;
+        btn.classList.toggle('active', isActive);
+        if (isActive) {
+          btn.style.background = 'linear-gradient(135deg,#1e3a8a,#2563eb)';
+          btn.style.color = '#fff';
+          btn.style.borderColor = '#2563eb';
+        } else {
+          btn.style.background = '#f8fafc';
+          btn.style.color = '#334155';
+          btn.style.borderColor = '#cbd5e1';
+        }
+      });
+
+      const hint = document.getElementById('pvcSaveHint');
+      if (hint) hint.style.display = (mode === 'pvc') ? 'block' : 'none';
+
+      if (mode === 'a4') {
+        sizePreset.value = '17.5x5.8';
+      } else if (mode === '4x6') {
+        sizePreset.value = '4x6_updown_rot';
+      } else if (mode === 'pvc') {
+        sizePreset.value = '8.5x5.4';
+      }
+      sizePreset.dispatchEvent(new Event('change'));
+      try {
+        showHindiToast(mode === 'a4' ? '📄 A4 Paper mode' : mode === '4x6' ? '🖼️ 4×6 Paper (Front+Back inverted)' : '🪪 PVC separate Front/Back mode');
+      } catch(e){}
+    }
+
+    const btnA4 = document.getElementById('btnModeA4');
+    const btn4x6 = document.getElementById('btnMode4x6');
+    const btnPVC = document.getElementById('btnModePVC');
+    if (btnA4) btnA4.addEventListener('click', () => setIdPrintMode('a4'));
+    if (btn4x6) btn4x6.addEventListener('click', () => setIdPrintMode('4x6'));
+    if (btnPVC) btnPVC.addEventListener('click', () => setIdPrintMode('pvc'));
+
 
     togglePhotoSelectBtn.onclick = () => {
       isPhotoSelectionMode = !isPhotoSelectionMode;
@@ -2736,6 +3064,9 @@
       nextStepBtn.classList.remove('btn-blink-pulse');
       nextStepBtnBottom.classList.remove('btn-blink-pulse');
       const { isSingle } = getTargetDimensions();
+      const isPvc = (typeof currentIdPrintMode !== 'undefined' && currentIdPrintMode === 'pvc');
+      /* PVC must always allow Front then Back — never treat as single-card skip */
+      const treatAsDual = isPvc || !isSingle;
       const addCardWrapper = document.getElementById('addCardWrapper');
 
       if (step === 'idle') {
@@ -2748,9 +3079,9 @@
         if (addCardWrapperBottom) addCardWrapperBottom.style.display = 'none';
         updateTopGuide('STEP 1', '📂 Click <b>"Choose File"</b>, Drag &amp; Drop, or <b>Paste (Ctrl+V)</b> ID card PDF / Image.');
       } else if (step === 'front') {
-        const txt = isSingle ? 'Capture Card' : 'Capture Front';
-        stepLabel.textContent = isSingle ? 'Select Single Card' : 'Step 1: select FRONT';
-        stepLabelBottom.textContent = isSingle ? 'Select Single Card' : 'Step 1: select FRONT';
+        const txt = treatAsDual ? 'Capture Front' : 'Capture Card';
+        stepLabel.textContent = treatAsDual ? 'Step 1: select FRONT' : 'Select Single Card';
+        stepLabelBottom.textContent = treatAsDual ? 'Step 1: select FRONT' : 'Select Single Card';
         nextStepBtn.textContent = txt;
         nextStepBtnBottom.textContent = txt;
         nextStepBtn.style.display = 'inline-block';
@@ -2761,7 +3092,7 @@
         nextStepBtnBottom.classList.add('btn-blink-pulse');
         if (addCardWrapper) addCardWrapper.style.display = 'none';
         if (addCardWrapperBottom) addCardWrapperBottom.style.display = 'none';
-        updateTopGuide('STEP 2', isSingle ? '✂️ Box set karein aur <b>"Capture Card"</b> click karein.' : '✂️ Front side par box set karein aur <b>"Capture Front"</b> click karein.');
+        updateTopGuide('STEP 2', treatAsDual ? '✂️ Front side par box set karein aur <b>"Capture Front"</b> click karein.' : '✂️ Box set karein aur <b>"Capture Card"</b> click karein.');
       } else if (step === 'back') {
         stepLabel.textContent = 'Step 2: select BACK';
         stepLabelBottom.textContent = 'Step 2: select BACK';
@@ -2784,18 +3115,27 @@
         nextStepBtnBottom.style.display = 'none';
         if (addCardWrapper) addCardWrapper.style.display = 'inline-flex';
         if (addCardWrapperBottom) addCardWrapperBottom.style.display = 'inline-flex';
-        updateTopGuide('READY', '✨ Set copies and click <b>"+ Add to Sheet (Ultra HD)"</b>.');
+        updateTopGuide('READY', isPvc ? '🪪 Use preview window to Save Front/Back or Capture Back.' : '✨ Set copies and click <b>"+ Add to Sheet (Ultra HD)"</b>.');
+        if (isPvc) {
+          try { showPvcPreviewModal(); } catch (e) {}
+        }
       }
     }
 
     async function handleCaptureAction() {
       const { isSingle } = getTargetDimensions();
+      const isPvc = (typeof currentIdPrintMode !== 'undefined' && currentIdPrintMode === 'pvc');
+      const treatAsDual = isPvc || !isSingle;
       if (currentStep === 'front') {
         const crop = getSelectedCropData(true);
         if (!crop) return alert('Please select area.');
         frontCropData = crop;
-        if (isSingle) setWorkflowStep('ready');
-        else {
+        if (isPvc) {
+          /* After Front in PVC → open preview so user can Save Front OR Capture Back */
+          setWorkflowStep('ready');
+        } else if (!treatAsDual) {
+          setWorkflowStep('ready');
+        } else {
           if (currentPdf && currentPdf.numPages > 1 && currentPageNum === 1) {
             currentPageNum = 2; pageToggleBtn.textContent = `Page 2/${currentPdf.numPages}`;
             await renderPage(2, false);
@@ -2814,25 +3154,25 @@
     nextStepBtnBottom.onclick = handleCaptureAction;
 
     function getTargetDimensions() {
-      let wCm = 17.0, hCm = 5.5, isVertical = false, isSingle = false, is4x6UpDownInverted = false;
+      let wCm = 17.5, hCm = 5.8, isVertical = false, isSingle = false, is4x6UpDownInverted = false;
       const preset = sizePreset.value;
-      if (preset === '17.0x5.5') { wCm = 17.0; hCm = 5.5; }
+      if (preset === '17.5x5.8') { wCm = 17.5; hCm = 5.8; }
       else if (preset === '8.5x11.0') { wCm = 8.5; hCm = 11.0; isVertical = true; }
       else if (preset === '8.5x5.4') { wCm = 8.5; hCm = 5.4; isSingle = true; }
       else if (preset === '4x6_updown_rot') { 
-        wCm = 8.5; hCm = 10.8; isVertical = true; is4x6UpDownInverted = true; 
+        wCm = 8.8; hCm = 12.6; isVertical = true; is4x6UpDownInverted = true; 
       }
       else if (preset === '16.0x5.0') { wCm = 16.0; hCm = 5.0; }
       else if (preset === '18.0x6.0') { wCm = 18.0; hCm = 6.0; }
       else if (preset === 'custom') {
-        wCm = parseFloat(customWidthInput.value) || 17.0;
-        hCm = parseFloat(customHeightInput.value) || 5.5;
+        wCm = parseFloat(customWidthInput.value) || 17.5;
+        hCm = parseFloat(customHeightInput.value) || 5.8;
         isVertical = hCm > wCm;
       }
       return { wCm, hCm, isVertical, isSingle, is4x6UpDownInverted };
     }
 
-    function appendCardToSheet(id, cardDataUrl, wCm, hCm, saveToDB = true) {
+    function appendCardToSheet(id, cardDataUrl, wCm, hCm, saveToDB = true, sideLabel = '') {
       const item = document.createElement('div');
       item.className = 'print-card-wrapper';
       item.style.width = `${wCm * 10}mm`;
@@ -2842,16 +3182,24 @@
       const img = document.createElement('img');
       img.src = cardDataUrl;
 
+      if (sideLabel) {
+        const badge = document.createElement('div');
+        badge.className = 'no-print';
+        badge.style.cssText = 'position:absolute;top:4px;left:4px;background:rgba(15,23,42,.9);color:#38bdf8;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;z-index:5;';
+        badge.textContent = sideLabel;
+        item.appendChild(badge);
+      }
+
       const actions = document.createElement('div');
       actions.className = 'card-actions no-print';
 
       const saveBtn = document.createElement('button');
       saveBtn.className = 'mini-btn save-btn';
-      saveBtn.innerHTML = '💾 Save';
+      saveBtn.innerHTML = sideLabel ? ('💾 Save ' + sideLabel) : '💾 Save';
       saveBtn.onclick = () => {
         const a = document.createElement('a');
         a.href = cardDataUrl;
-        a.download = `ID_Card_300DPI_${Date.now()}.png`;
+        a.download = `ID_${sideLabel || 'Card'}_300DPI_${Date.now()}.png`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -2881,10 +3229,76 @@
 
     async function handleAddCardToSheetAction() {
       const { wCm, hCm, isVertical, isSingle, is4x6UpDownInverted } = getTargetDimensions();
+
+      // PVC MODE: save Front and Back as two separate single cards
+      if (currentIdPrintMode === 'pvc' || (isSingle && frontCropData && backCropData)) {
+        if (!frontCropData) return alert('Capture Front side first.');
+        const pixelW = Math.round(8.5 * DPICM);
+        const pixelH = Math.round(5.4 * DPICM);
+        const numCopies = Math.max(1, Math.min(10, parseInt(document.getElementById('cardCopies').value, 10) || 1));
+
+        // Save FRONT
+        {
+          const c = document.createElement('canvas');
+          c.width = pixelW; c.height = pixelH;
+          const ctx = c.getContext('2d');
+          ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+          ctx.fillStyle = '#fff'; ctx.fillRect(0,0,pixelW,pixelH);
+          ctx.drawImage(frontCropData, 0, 0, pixelW, pixelH);
+          if (enableBorderCheck.checked) {
+            const bW = Math.max(1, parseInt(borderWidth.value, 10) * 2);
+            ctx.lineWidth = bW; ctx.strokeStyle = borderColor.value;
+            ctx.strokeRect(bW/2, bW/2, pixelW-bW, pixelH-bW);
+          }
+          const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+          const url = URL.createObjectURL(blob);
+          for (let i=0; i<numCopies; i++) {
+            appendCardToSheet('pvc_front_' + Date.now() + '_' + i, url, 8.5, 5.4, true, 'FRONT');
+          }
+        }
+
+        // Save BACK if available
+        if (backCropData) {
+          const c = document.createElement('canvas');
+          c.width = pixelW; c.height = pixelH;
+          const ctx = c.getContext('2d');
+          ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+          ctx.fillStyle = '#fff'; ctx.fillRect(0,0,pixelW,pixelH);
+          ctx.drawImage(backCropData, 0, 0, pixelW, pixelH);
+          if (enableBorderCheck.checked) {
+            const bW = Math.max(1, parseInt(borderWidth.value, 10) * 2);
+            ctx.lineWidth = bW; ctx.strokeStyle = borderColor.value;
+            ctx.strokeRect(bW/2, bW/2, pixelW-bW, pixelH-bW);
+          }
+          const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+          const url = URL.createObjectURL(blob);
+          for (let i=0; i<numCopies; i++) {
+            appendCardToSheet('pvc_back_' + Date.now() + '_' + i, url, 8.5, 5.4, true, 'BACK');
+          }
+        }
+
+        checkMilestoneAndRecord('ID Card Studio', numCopies * (backCropData ? 2 : 1));
+        document.getElementById('pdfInput').value = '';
+        stageWrapper.style.display = 'none';
+        setWorkflowStep('idle');
+        showHindiToast('🪪 PVC Front' + (backCropData ? ' + Back' : '') + ' saved separately! Click 💾 Save on each card.');
+        return;
+      }
+
       if (!frontCropData || (!isSingle && !backCropData)) return alert('Capture both sides first.');
 
       const pixelWidth = Math.round(wCm * DPICM);
       const pixelHeight = Math.round(hCm * DPICM);
+
+      /* ── Fold-gap (default 0.1cm white strip at fold line) ──────── */
+      const foldGapCmInput = document.getElementById('foldGapCm');
+      const foldGapCmVal   = Math.max(0, Math.min(1, parseFloat(foldGapCmInput && foldGapCmInput.value) || 0));
+      let   foldGapPx      = Math.round(foldGapCmVal * DPICM);
+      const maxFoldGapPx   = Math.floor(Math.min(pixelWidth, pixelHeight) * 0.2);
+      foldGapPx = Math.min(foldGapPx, maxFoldGapPx);
+      if (foldGapCmInput) localStorage.setItem('id_fold_gap_cm', foldGapCmVal);
+      /* ──────────────────────────────────────────────────────────── */
+
       const finalCanvas = document.createElement('canvas');
       finalCanvas.width = pixelWidth; finalCanvas.height = pixelHeight;
       const fCtx = finalCanvas.getContext('2d', { willReadFrequently: true });
@@ -2896,20 +3310,25 @@
       if (isSingle) {
         fCtx.drawImage(frontCropData, 0, 0, pixelWidth, pixelHeight);
       } else if (is4x6UpDownInverted) {
-        const halfH = pixelHeight / 2;
+        const availH = pixelHeight - foldGapPx;
+        const halfH  = availH / 2;
         fCtx.drawImage(frontCropData, 0, 0, pixelWidth, halfH);
         
         fCtx.save();
-        fCtx.translate(pixelWidth / 2, halfH + halfH / 2);
+        fCtx.translate(pixelWidth / 2, halfH + foldGapPx + halfH / 2);
         fCtx.rotate(Math.PI);
         fCtx.drawImage(backCropData, -pixelWidth / 2, -halfH / 2, pixelWidth, halfH);
         fCtx.restore();
       } else if (!isVertical) {
-        fCtx.drawImage(frontCropData, 0, 0, pixelWidth / 2, pixelHeight);
-        fCtx.drawImage(backCropData, pixelWidth / 2, 0, pixelWidth / 2, pixelHeight);
+        const availW = pixelWidth - foldGapPx;
+        const halfW  = availW / 2;
+        fCtx.drawImage(frontCropData, 0, 0, halfW, pixelHeight);
+        fCtx.drawImage(backCropData,  halfW + foldGapPx, 0, halfW, pixelHeight);
       } else {
-        fCtx.drawImage(frontCropData, 0, 0, pixelWidth, pixelHeight / 2);
-        fCtx.drawImage(backCropData, 0, pixelHeight / 2, pixelWidth, pixelHeight / 2);
+        const availH = pixelHeight - foldGapPx;
+        const halfH  = availH / 2;
+        fCtx.drawImage(frontCropData, 0, 0, pixelWidth, halfH);
+        fCtx.drawImage(backCropData,  0, halfH + foldGapPx, pixelWidth, halfH);
       }
 
       if (enableBorderCheck.checked) {
@@ -2944,11 +3363,187 @@
     addCardBtn.onclick = handleAddCardToSheetAction;
     addCardBtnBottom.onclick = handleAddCardToSheetAction;
 
+    /* ========== PVC Preview Modal helpers ========== */
+    function _pvcCropToDataUrl(cropCanvas) {
+      if (!cropCanvas) return null;
+      const pixelW = Math.round(8.5 * DPICM);
+      const pixelH = Math.round(5.4 * DPICM);
+      const c = document.createElement('canvas');
+      c.width = pixelW; c.height = pixelH;
+      const ctx = c.getContext('2d');
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, pixelW, pixelH);
+      ctx.drawImage(cropCanvas, 0, 0, pixelW, pixelH);
+      if (enableBorderCheck && enableBorderCheck.checked) {
+        const bW = Math.max(1, parseInt(borderWidth.value, 10) * 2);
+        ctx.lineWidth = bW; ctx.strokeStyle = borderColor.value;
+        ctx.strokeRect(bW / 2, bW / 2, pixelW - bW, pixelH - bW);
+      }
+      return c.toDataURL('image/png');
+    }
+
+    function showPvcPreviewModal() {
+      const modal = document.getElementById('pvcPreviewModal');
+      if (!modal) return;
+      const frontBox = document.getElementById('pvcFrontPreviewBox');
+      const backBox = document.getElementById('pvcBackPreviewBox');
+      const saveFrontBtn = document.getElementById('pvcSaveFrontBtn');
+      const saveBackBtn = document.getElementById('pvcSaveBackBtn');
+      const saveBothBtn = document.getElementById('pvcSaveBothBtn');
+      const recapBackBtn = document.getElementById('pvcRecaptureBackBtn');
+
+      if (frontCropData) {
+        const url = _pvcCropToDataUrl(frontCropData);
+        frontBox.innerHTML = '<img src="' + url + '" style="max-width:100%;max-height:200px;display:block;margin:0 auto;border-radius:6px;">';
+        frontBox.dataset.url = url;
+        if (saveFrontBtn) saveFrontBtn.disabled = false;
+      } else {
+        frontBox.innerHTML = '<span style="color:#94a3b8;font-size:13px;">Not captured</span>';
+        frontBox.dataset.url = '';
+        if (saveFrontBtn) saveFrontBtn.disabled = true;
+      }
+
+      if (backCropData) {
+        const url = _pvcCropToDataUrl(backCropData);
+        backBox.innerHTML = '<img src="' + url + '" style="max-width:100%;max-height:200px;display:block;margin:0 auto;border-radius:6px;">';
+        backBox.dataset.url = url;
+        if (saveBackBtn) saveBackBtn.disabled = false;
+        if (recapBackBtn) recapBackBtn.textContent = '↺ Recapture Back';
+      } else {
+        backBox.innerHTML = '<span style="color:#94a3b8;font-size:13px;">Not captured yet</span>';
+        backBox.dataset.url = '';
+        if (saveBackBtn) saveBackBtn.disabled = true;
+        if (recapBackBtn) recapBackBtn.textContent = '📷 Capture Back';
+      }
+
+      if (saveBothBtn) saveBothBtn.disabled = !(frontCropData && backCropData);
+      modal.style.display = 'flex';
+    }
+
+    function hidePvcPreviewModal() {
+      const modal = document.getElementById('pvcPreviewModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function _pvcDownloadUrl(url, label) {
+      if (!url) return;
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'PVC_' + label + '_300DPI_' + Date.now() + '.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    (function bindPvcModalButtons() {
+      const saveFront = document.getElementById('pvcSaveFrontBtn');
+      const saveBack = document.getElementById('pvcSaveBackBtn');
+      const saveBoth = document.getElementById('pvcSaveBothBtn');
+      const recapFront = document.getElementById('pvcRecaptureFrontBtn');
+      const recapBack = document.getElementById('pvcRecaptureBackBtn');
+      const recapBoth = document.getElementById('pvcRecaptureBothBtn');
+      const addSheet = document.getElementById('pvcAddToSheetBtn');
+      const closeBtn = document.getElementById('pvcClosePreviewBtn');
+
+      if (saveFront) saveFront.onclick = function () {
+        _pvcDownloadUrl(document.getElementById('pvcFrontPreviewBox').dataset.url, 'FRONT');
+        try { showHindiToast('💾 Front side saved!'); } catch (e) {}
+      };
+      if (saveBack) saveBack.onclick = function () {
+        _pvcDownloadUrl(document.getElementById('pvcBackPreviewBox').dataset.url, 'BACK');
+        try { showHindiToast('💾 Back side saved!'); } catch (e) {}
+      };
+      if (saveBoth) saveBoth.onclick = function () {
+        _pvcDownloadUrl(document.getElementById('pvcFrontPreviewBox').dataset.url, 'FRONT');
+        setTimeout(function () {
+          _pvcDownloadUrl(document.getElementById('pvcBackPreviewBox').dataset.url, 'BACK');
+        }, 300);
+        try { showHindiToast('💾 Front + Back saved!'); } catch (e) {}
+      };
+      if (recapFront) recapFront.onclick = function () {
+        hidePvcPreviewModal();
+        frontCropData = null;
+        setWorkflowStep('front');
+        try { showHindiToast('✂️ Front side again select karein.'); } catch (e) {}
+      };
+      if (recapBack) recapBack.onclick = function () {
+        hidePvcPreviewModal();
+        backCropData = null;
+        /* Switch to page 2 if multi-page PDF */
+        if (currentPdf && currentPdf.numPages > 1 && currentPageNum === 1) {
+          currentPageNum = 2;
+          if (pageToggleBtn) pageToggleBtn.textContent = 'Page 2/' + currentPdf.numPages;
+          renderPage(2, false);
+        }
+        setWorkflowStep('back');
+        try { showHindiToast('✂️ Back side select karein aur Capture Back dabayein.'); } catch (e) {}
+      };
+      if (recapBoth) recapBoth.onclick = function () {
+        hidePvcPreviewModal();
+        frontCropData = null;
+        backCropData = null;
+        setWorkflowStep('front');
+        try { showHindiToast('✂️ Front se shuru — both sides recapture.'); } catch (e) {}
+      };
+      if (addSheet) addSheet.onclick = function () {
+        hidePvcPreviewModal();
+        handleAddCardToSheetAction();
+      };
+      if (closeBtn) closeBtn.onclick = function () { hidePvcPreviewModal(); };
+    })();
+
     function updateSheetButtonsState() {
       const has = a4Sheet.children.length > 0;
       printBtn.disabled = !has; clearSheetBtn.disabled = !has;
     }
-    function handlePrintSheet() { document.body.className = 'mode-id'; window.print(); }
+    function handlePrintSheet() {
+      document.body.className = 'mode-id';
+      let pageStyle = document.getElementById('ilpDynamicPageStyle');
+      if (!pageStyle) {
+        pageStyle = document.createElement('style');
+        pageStyle.id = 'ilpDynamicPageStyle';
+        document.head.appendChild(pageStyle);
+      }
+      const sheet = document.getElementById('a4Sheet');
+      const is4x6 = (typeof currentIdPrintMode !== 'undefined' && currentIdPrintMode === '4x6') || sizePreset.value === '4x6_updown_rot';
+
+      if (is4x6) {
+        document.documentElement.style.setProperty('--id-paper-width', '101.6mm');
+        document.documentElement.style.setProperty('--id-paper-height', '152.4mm');
+        pageStyle.textContent = `
+          @page { size: 101.6mm 152.4mm; margin: 0 !important; }
+          html, body { width: 101.6mm !important; height: 152.4mm !important; max-height: 152.4mm !important; overflow: hidden !important; }
+          body.mode-id .a4-sheet {
+            width: 101.6mm !important; height: 152.4mm !important;
+            min-height: 0 !important; max-height: 152.4mm !important;
+            overflow: hidden !important;
+          }
+        `;
+        if (sheet) sheet.style.cssText = 'width:101.6mm;height:152.4mm;min-height:0;max-height:152.4mm;overflow:hidden;';
+      } else {
+        document.documentElement.style.setProperty('--id-paper-width', '210mm');
+        document.documentElement.style.setProperty('--id-paper-height', '297mm');
+        pageStyle.textContent = `
+          @page { size: 210mm 297mm; margin: 0 !important; }
+          html, body { width: 210mm !important; height: 297mm !important; max-height: 297mm !important; overflow: hidden !important; }
+          body.mode-id .a4-sheet {
+            width: 210mm !important; height: 297mm !important;
+            min-height: 0 !important; max-height: 297mm !important;
+            overflow: hidden !important;
+          }
+        `;
+        if (sheet) sheet.style.cssText = '';
+      }
+
+      if (sheet) void sheet.offsetHeight;
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+          pageStyle.textContent = '@page { size: 210mm 297mm; margin: 0 !important; }';
+          if (sheet) sheet.style.cssText = '';
+        }, 800);
+      }, 200);
+    }
 
     clearSheetBtn.onclick = async () => {
       if (confirm('Clear print sheet?')) {
@@ -2960,6 +3555,8 @@
 
     /* PASSPORT PHOTO STUDIO CONTROLLER */
     let currentPassportPreset = 'a4_row6';
+    document.documentElement.style.setProperty('--pass-cols', '6');
+    document.documentElement.style.setProperty('--pass-gap', '1.5mm');
 
     const passWidthCmInput = document.getElementById('passWidthCm');
     const passHeightCmInput = document.getElementById('passHeightCm');
@@ -3003,13 +3600,15 @@
         document.getElementById('presetA4RowBtn').classList.add('active');
         document.documentElement.style.setProperty('--pass-paper-width', '210mm');
         document.documentElement.style.setProperty('--pass-paper-min-height', '297mm');
+        document.documentElement.style.setProperty('--pass-cols', '6');
+        document.documentElement.style.setProperty('--pass-gap', '1.5mm');
         
-        passWidthCmInput.value = '3.2';
-        passHeightCmInput.value = '4.0';
+        passWidthCmInput.value = '3.1';
+        passHeightCmInput.value = '3.8';
         passMarginTopInput.value = '5';
         passMarginBottomInput.value = '5';
-        passMarginLeftInput.value = '5';
-        passMarginRightInput.value = '5';
+        passMarginLeftInput.value = '3';
+        passMarginRightInput.value = '3';
         passFillPage.checked = false;
 
         personList.forEach(p => p.qty = 6);
@@ -3018,6 +3617,8 @@
         document.getElementById('preset4x6Btn').classList.add('active');
         document.documentElement.style.setProperty('--pass-paper-width', '152.4mm');
         document.documentElement.style.setProperty('--pass-paper-min-height', '101.6mm');
+        document.documentElement.style.setProperty('--pass-cols', 'auto-fill');
+        document.documentElement.style.setProperty('--pass-gap', '2mm');
         
         passWidthCmInput.value = '3.4';
         passHeightCmInput.value = '4.3';
@@ -3156,8 +3757,8 @@
       const canvases = document.querySelectorAll(`canvas[data-person-id="${p.id}"]`);
       if (canvases.length === 0) return;
 
-      const wCm = parseFloat(passWidthCmInput.value) || 3.2;
-      const hCm = parseFloat(passHeightCmInput.value) || 4.0;
+      const wCm = parseFloat(passWidthCmInput.value) || 3.1;
+      const hCm = parseFloat(passHeightCmInput.value) || 3.8;
       const targetW = Math.round(wCm * DPICM);
       const targetH = Math.round(hCm * DPICM);
 
@@ -3241,8 +3842,8 @@
     }
 
     function updatePassportLayout() {
-      const wCm = parseFloat(passWidthCmInput.value) || 3.2;
-      const hCm = parseFloat(passHeightCmInput.value) || 4.0;
+      const wCm = parseFloat(passWidthCmInput.value) || 3.1;
+      const hCm = parseFloat(passHeightCmInput.value) || 3.8;
       document.documentElement.style.setProperty('--photo-width', `${wCm}cm`);
       document.documentElement.style.setProperty('--photo-height', `${hCm}cm`);
 
@@ -3251,10 +3852,12 @@
 
       let autoQty = null;
       if (passFillPage.checked) {
+        // Usable area after 5mm margins (approx)
         const paperW = currentPassportPreset === '4x6_8photos' ? 142 : 200;
-        const paperH = currentPassportPreset === '4x6_8photos' ? 92 : 287;
-        const cols = Math.floor(paperW / ((wCm * 10) + 2));
-        const rows = Math.floor(paperH / ((hCm * 10) + 2));
+        const paperH = currentPassportPreset === '4x6_8photos' ? 91 : 287;
+        const gap = 2; // mm gap between photos
+        const cols = Math.max(1, Math.floor(paperW / ((wCm * 10) + gap)));
+        const rows = Math.max(1, Math.floor(paperH / ((hCm * 10) + gap)));
         autoQty = Math.max(1, Math.floor((cols * rows) / personList.length));
       }
 
@@ -3277,7 +3880,59 @@
       if (personList.length === 0) return alert('Please add a photo first.');
       renderAllPassportMatrixCanvases();
       document.body.className = 'mode-passport';
-      window.print();
+
+      let pageStyle = document.getElementById('ilpDynamicPageStyle');
+      if (!pageStyle) {
+        pageStyle = document.createElement('style');
+        pageStyle.id = 'ilpDynamicPageStyle';
+        document.head.appendChild(pageStyle);
+      }
+
+      const is4x6 = currentPassportPreset === '4x6_8photos';
+      if (is4x6) {
+        // True 4x6 landscape for photo matrix (photos side-by-side)
+        document.documentElement.style.setProperty('--pass-paper-width', '152.4mm');
+        document.documentElement.style.setProperty('--pass-paper-min-height', '101.6mm');
+        pageStyle.textContent = `
+          @page { size: 152.4mm 101.6mm; margin: 0 !important; }
+          html, body { width: 152.4mm !important; height: 101.6mm !important; max-height: 101.6mm !important; overflow: hidden !important; }
+          body.mode-passport .passport-a4-sheet {
+            width: 152.4mm !important; height: 101.6mm !important;
+            min-height: 0 !important; max-height: 101.6mm !important;
+            overflow: hidden !important;
+          }
+        `;
+        passportA4Sheet.style.cssText = 'width:152.4mm;height:101.6mm;min-height:0;max-height:101.6mm;overflow:hidden;';
+      } else {
+        document.documentElement.style.setProperty('--pass-paper-width', '210mm');
+        document.documentElement.style.setProperty('--pass-paper-min-height', '297mm');
+        document.documentElement.style.setProperty('--pass-cols', '6');
+        document.documentElement.style.setProperty('--pass-gap', '1.5mm');
+        pageStyle.textContent = `
+          @page { size: 210mm 297mm; margin: 0 !important; }
+          html, body { width: 210mm !important; height: 297mm !important; max-height: 297mm !important; overflow: hidden !important; }
+          body.mode-passport .passport-a4-sheet {
+            width: 210mm !important; height: 297mm !important;
+            min-height: 0 !important; max-height: 297mm !important;
+            overflow: hidden !important;
+            grid-template-columns: repeat(6, var(--photo-width, 3.1cm)) !important;
+            grid-gap: 1.5mm !important;
+          }
+        `;
+        passportA4Sheet.style.cssText = '';
+      }
+
+      // Force one reflow then print
+      void passportA4Sheet.offsetHeight;
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+          pageStyle.textContent = '@page { size: 210mm 297mm; margin: 0 !important; }';
+          passportA4Sheet.style.cssText = '';
+          document.documentElement.style.setProperty('--pass-paper-width', currentPassportPreset === '4x6_8photos' ? '152.4mm' : '210mm');
+          document.documentElement.style.setProperty('--pass-paper-min-height', currentPassportPreset === '4x6_8photos' ? '101.6mm' : '297mm');
+        }, 800);
+      }, 200);
     }
 
     /* AI BACKGROUND REMOVER & UPSCALER CONTROLLER */
@@ -4645,22 +5300,127 @@
       showHindiToast('Corners reset to full frame.');
     };
 
-    /* FIXED DIRECT AUTOCROPPER PRINT HANDLER */
-    $('#btnPrint').onclick = () => {
-      if(!documents.length){ alert('Please add at least one document first.'); return; }
+    /* AutoCropper print — iframe host = exactly 1 A4 page, zero blank pages */
+    function printCropperA4() {
+      if (!documents.length) { alert('Please add at least one document first.'); return; }
       selectedDocId = null;
-      highlightSelectedOnSheet();
-      document.body.className = 'mode-cropper';
-      setTimeout(() => {
-        window.print();
-      }, 250);
-    };
+      try { highlightSelectedOnSheet(); } catch (e) {}
+
+      const paper = document.getElementById('a4Paper');
+      if (!paper) { alert('Print sheet not ready.'); return; }
+
+      const clone = paper.cloneNode(true);
+      clone.querySelectorAll('.ac-margins-guide, .ac-res-h, .ac-dim-badge, .ac-action-bar').forEach(function (el) {
+        el.remove();
+      });
+      clone.querySelectorAll('.selected').forEach(function (el) { el.classList.remove('selected'); });
+      clone.querySelectorAll('.ac-print-box').forEach(function (el) {
+        el.style.outline = 'none';
+        el.style.boxShadow = 'none';
+      });
+
+      const iframe = document.createElement('iframe');
+      iframe.setAttribute('aria-hidden', 'true');
+      iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none;';
+      document.body.appendChild(iframe);
+
+      const idoc = iframe.contentDocument || iframe.contentWindow.document;
+      idoc.open();
+      idoc.write(
+        '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+        '<title>Print A4</title><style>' +
+        '@page{size:210mm 297mm;margin:0}' +
+        'html,body{margin:0;padding:0;width:210mm;height:297mm;background:#fff;overflow:hidden}' +
+        '.ac-paper{width:210mm;height:297mm;position:relative;background:#fff;overflow:hidden;box-sizing:border-box}' +
+        '.ac-print-box{position:absolute;box-sizing:border-box;background:#fff;overflow:hidden}' +
+        '.ac-print-box img{width:100%;height:100%;display:block;object-fit:fill;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+        '.ac-cut-guide .ac-print-box{outline:1px dashed #cbd5e1;outline-offset:1px}' +
+        '</style></head><body></body></html>'
+      );
+      idoc.close();
+      idoc.body.appendChild(clone);
+
+      const imgs = Array.prototype.slice.call(clone.querySelectorAll('img'));
+      const wait = imgs.map(function (img) {
+        if (img.complete && img.naturalWidth) return Promise.resolve();
+        return new Promise(function (resolve) {
+          img.onload = resolve;
+          img.onerror = resolve;
+          setTimeout(resolve, 1500);
+        });
+      });
+
+      Promise.all(wait).then(function () {
+        setTimeout(function () {
+          try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          } catch (err) {
+            // Fallback: in-page host
+            var host = document.getElementById('acPrintHost');
+            if (!host) {
+              host = document.createElement('div');
+              host.id = 'acPrintHost';
+              document.body.appendChild(host);
+            }
+            host.innerHTML = '';
+            host.appendChild(clone.cloneNode(true));
+            document.body.className = 'mode-cropper';
+            window.print();
+            setTimeout(function () { host.innerHTML = ''; }, 600);
+          }
+          setTimeout(function () {
+            if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+          }, 1200);
+        }, 120);
+      });
+    }
+
+    $('#btnPrint').onclick = function () { printCropperA4(); };
+
 
     $('#drop').onclick = () => $('#fileInput').click();
     $('#fileInput').onchange = e => {
       loadCropperFiles(e.target.files);
       e.target.value = '';
     };
+
+    /* Drag & Drop on drop zone + anywhere while AutoCropper is open */
+    (function setupCropperDnD() {
+      const dropZone = document.getElementById('drop');
+      if (dropZone) {
+        ['dragenter', 'dragover'].forEach(function (ev) {
+          dropZone.addEventListener(ev, function (e) {
+            e.preventDefault(); e.stopPropagation();
+            dropZone.classList.add('over');
+          });
+        });
+        ['dragleave', 'drop'].forEach(function (ev) {
+          dropZone.addEventListener(ev, function (e) {
+            e.preventDefault(); e.stopPropagation();
+            dropZone.classList.remove('over');
+          });
+        });
+        dropZone.addEventListener('drop', function (e) {
+          const files = e.dataTransfer && e.dataTransfer.files;
+          if (files && files.length) loadCropperFiles(files);
+        });
+      }
+      document.addEventListener('dragover', function (e) {
+        if (typeof currentActiveStudio !== 'undefined' && currentActiveStudio === 'cropper') e.preventDefault();
+      });
+      document.addEventListener('drop', function (e) {
+        if (typeof currentActiveStudio === 'undefined' || currentActiveStudio !== 'cropper') return;
+        if (e.target.closest && e.target.closest('#drop')) return;
+        e.preventDefault();
+        const files = e.dataTransfer && e.dataTransfer.files;
+        if (files && files.length) {
+          loadCropperFiles(files);
+          try { showHindiToast('📋 डॉक्युमेंट ड्रॉप हो गया!'); } catch (err) {}
+        }
+      });
+    })();
+
 
     window.addEventListener('resize', () => {
       if (currentActiveStudio === 'cropper') {
@@ -6288,7 +7048,8 @@ function json(obj) {
       if (!grid) return;
       grid.querySelectorAll('[data-dynamic-module]').forEach(el => el.remove());
 
-      this.cache.forEach(m => {
+      this.cache
+        .forEach(m => {
         const card = document.createElement('div');
         card.className = 'landing-hub-card';
         card.setAttribute('data-dynamic-module', m.id);
@@ -7102,63 +7863,167 @@ ILP_AUTH.submitRegistration = async function () {
 
 
 <!-- ============================================================
-     iLovePrint ADD-ON v5 — Farmer ID Maker controller
-     Loads the farmer HTML from an external file inside an iframe.
+     iLovePrint ADD-ON v5 — External HTML Modules (Joint Photo)
+     Loads external HTML files into iframes. Place files next to this page
+     on GitHub Pages / hosting (e.g. joint-photo.html).
      ============================================================ -->
 <script>
 (function () {
   'use strict';
 
-  /* Path to the Farmer ID Maker file — it must sit next to dev6.html
-     on your GitHub Pages site (or wherever you host these files). */
-  const FARMER_HTML_PATH = 'farmer-id-maker.html';
+  const MODULES = {
+    joint: {
+      path: 'joint-photo.html',
+      sectionId: 'jointSection',
+      frameId: 'jointFrame',
+      bodyClass: 'mode-joint'
+    }
+  };
+
+  const EXTERNAL_SECTION_IDS = Object.values(MODULES).map(m => m.sectionId);
+
+  function hideExternalSections() {
+    EXTERNAL_SECTION_IDS.forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+  }
+
+  function requireAuth() {
+    const acc     = JSON.parse(localStorage.getItem('iloveprint_account') || 'null');
+    const adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
+    if (adminIn) return true;
+    if (!acc) { window.ILP_AUTH.showRegistration(); return false; }
+    if (acc.status !== 'approved') {
+      if (acc.status === 'pending_payment') window.ILP_AUTH.showPaymentModal();
+      else window.ILP_AUTH.showPending();
+      return false;
+    }
+    if (acc.expiryDate && Date.now() > acc.expiryDate) {
+      window.ILP_AUTH.showExpired();
+      return false;
+    }
+    return true;
+  }
+
+  function openExternalModule(mode) {
+    const cfg = MODULES[mode];
+    if (!cfg) return false;
+    if (!requireAuth()) return true; // handled (blocked)
+
+    ['landingSection','smartIdSection','passportSection','bgaiSection','cropperSection','dynamicModuleSection']
+      .forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+    hideExternalSections();
+
+    const tg = document.getElementById('topGuideBar'); if (tg) tg.style.display = 'none';
+    const hb = document.getElementById('topHubReturnBtn'); if (hb) hb.style.display = 'inline-flex';
+
+    const iframe = document.getElementById(cfg.frameId);
+    if (iframe && !iframe.dataset.loaded) {
+      iframe.src = cfg.path;
+      iframe.dataset.loaded = '1';
+    }
+
+    const section = document.getElementById(cfg.sectionId);
+    if (section) section.style.display = 'block';
+    document.body.className = cfg.bodyClass;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return true;
+  }
 
   const _origSwitch = window.switchSuiteSection;
   window.switchSuiteSection = function (mode) {
-    const farmerSec = document.getElementById('farmerSection');
-    if (farmerSec) farmerSec.style.display = 'none';
-
-    if (mode === 'farmer') {
-      const acc     = JSON.parse(localStorage.getItem('iloveprint_account') || 'null');
-      const adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
-      if (!adminIn) {
-        if (!acc) { window.ILP_AUTH.showRegistration(); return; }
-        if (acc.status !== 'approved') {
-          if (acc.status === 'pending_payment') window.ILP_AUTH.showPaymentModal();
-          else                                  window.ILP_AUTH.showPending();
-          return;
-        }
-        if (acc.expiryDate && Date.now() > acc.expiryDate) {
-          window.ILP_AUTH.showExpired(); return;
-        }
-      }
-
-      ['landingSection','smartIdSection','passportSection','bgaiSection','cropperSection']
-        .forEach(function (id) {
-          const el = document.getElementById(id);
-          if (el) el.style.display = 'none';
-        });
-
-      const tg = document.getElementById('topGuideBar'); if (tg) tg.style.display = 'none';
-      const hb = document.getElementById('topHubReturnBtn'); if (hb) hb.style.display = 'inline-flex';
-
-      const iframe = document.getElementById('farmerFrame');
-      if (iframe && !iframe.dataset.loaded) {
-        /* Load the file over HTTP — no textarea, no inline HTML, no leaks. */
-        iframe.src = FARMER_HTML_PATH;
-        iframe.dataset.loaded = '1';
-      }
-
-      if (farmerSec) farmerSec.style.display = 'block';
-      document.body.className = 'mode-farmer';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    hideExternalSections();
+    if (MODULES[mode]) {
+      openExternalModule(mode);
       return;
     }
     return _origSwitch.apply(this, arguments);
   };
 
-  console.log('[iLovePrint] Farmer ID Maker module ready (loads ' + FARMER_HTML_PATH + ').');
+  console.log('[iLovePrint] External modules ready:', Object.keys(MODULES).join(', '));
 })();
 </script>
+
+<!-- ============================================================
+     iLovePrint ADD-ON v6 — Bandhkam Kamgar module (iframe + home bar)
+     ============================================================ -->
+<script>
+(function () {
+  'use strict';
+
+  const BANDHKAM_PATH = 'MahaBOCW_ID_Card_Download_Fix.html';
+  const SECTION_ID    = 'bandhkamSection';
+  const FRAME_ID      = 'bandhkamFrame';
+  const OTHER_SECTIONS = [
+    'landingSection','smartIdSection','passportSection',
+    'bgaiSection','cropperSection','jointSection','dynamicModuleSection'
+  ];
+
+  function hideOthers() {
+    OTHER_SECTIONS.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+  }
+
+  function requireAuth() {
+    var acc     = JSON.parse(localStorage.getItem('iloveprint_account') || 'null');
+    var adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
+    if (adminIn) return true;
+    if (!acc) { window.ILP_AUTH.showRegistration(); return false; }
+    if (acc.status !== 'approved') {
+      if (acc.status === 'pending_payment') window.ILP_AUTH.showPaymentModal();
+      else                                  window.ILP_AUTH.showPending();
+      return false;
+    }
+    if (acc.expiryDate && Date.now() > acc.expiryDate) {
+      window.ILP_AUTH.showExpired();
+      return false;
+    }
+    return true;
+  }
+
+  window.openBandhkamModule = function () {
+    if (!requireAuth()) return;
+
+    hideOthers();
+
+    var tg = document.getElementById('topGuideBar');
+    if (tg) tg.style.display = 'none';
+    var hb = document.getElementById('topHubReturnBtn');
+    if (hb) hb.style.display = 'inline-flex';
+
+    var iframe = document.getElementById(FRAME_ID);
+    if (iframe && !iframe.dataset.loaded) {
+      iframe.src = BANDHKAM_PATH;
+      iframe.dataset.loaded = '1';
+    }
+
+    var sec = document.getElementById(SECTION_ID);
+    if (sec) sec.style.display = 'block';
+    document.body.className = 'mode-bandhkam';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Wrap switchSuiteSection so `mode === 'bandhkam'` is handled
+  // and switching away always hides the Bandhkam section.
+  var _origSwitch = window.switchSuiteSection;
+  window.switchSuiteSection = function (mode) {
+    var sec = document.getElementById(SECTION_ID);
+    if (sec) sec.style.display = 'none';
+    if (mode === 'bandhkam') { window.openBandhkamModule(); return; }
+    return _origSwitch.apply(this, arguments);
+  };
+
+  console.log('[iLovePrint] Bandhkam Kamgar module ready.');
+})();
+</script>
+<!-- ============ END iLovePrint ADD-ON v6 ============ -->
+
+
 </body>
 </html>
