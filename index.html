@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- Cashfree Checkout SDK v3 -->
-<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 
 <head>
+
+
+  <!-- Cashfree Checkout SDK v3 -->
+  <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>iLovePrint.in · Ultra 300 DPI Smart ID, Passport Photo Studio & AI Cutout Suite</title>
@@ -5725,7 +5729,7 @@
     </div>
     <div class="ilp-btn-row">
       <button class="ilp-btn ghost" onclick="ILP_AUTH.logout()">Logout</button>
-      <button class="ilp-btn ghost" onclick="ILP_AUTH.showPaymentModal()">Show QR</button>
+      <button class="ilp-btn ghost" onclick="ILP_AUTH.showPaymentModal()">💳 Change Plan / Pay</button>
       <button class="ilp-btn primary" onclick="ILP_AUTH.checkStatus()">🔄 Check Status</button>
     </div>
   </div>
@@ -6211,18 +6215,10 @@
       }
     },
 
-    showPaymentModal(isRecharge) {
+showPaymentModal(isRecharge) {
       const acc = LS.get(K.ACC, null);
       if (!acc) return this.showRegistration();
       hideAllAuthModals();
-      const s = ILPSettings.get();
-      gEl('ilpPayTitle').textContent = isRecharge ? '🔄 Recharge Plan' : '💳 Complete Payment';
-      gEl('ilpPaySubtitle').textContent = isRecharge
-        ? 'Extend your monthly plan by paying the amount below.'
-        : 'To activate your account, pay the amount using UPI QR below.';
-      gEl('ilpPayAmountBig').textContent = '₹' + s.amount;
-      gEl('ilpUpiTxt').textContent = s.upiId;
-      gEl('ilpQrImg').src = buildQrSrc();
       show('ilpPayModal');
     },
 
@@ -8057,7 +8053,7 @@ ILP_AUTH.submitRegistration = async function () {
       const acc = ILP_AUTH.getAccount();
       if (!acc) return ILP_AUTH.showRegistration();
 
-      const cloudUrl = window.ILP_SETTINGS ? window.ILP_SETTINGS.sheetUrl() : GOOGLE_SHEET_API_URL;
+      const cloudUrl = (window.ILP_SETTINGS && window.ILP_SETTINGS.sheetUrl()) ? window.ILP_SETTINGS.sheetUrl() : (typeof GOOGLE_SHEET_API_URL !== 'undefined' ? GOOGLE_SHEET_API_URL : '');
       if (!cloudUrl) {
         alert("Google Apps Script URL is missing in Settings.");
         return;
