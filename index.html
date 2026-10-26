@@ -6027,20 +6027,30 @@
   }
 
   /* ---------- Plan helpers ---------- */
+  function safeTs(v) {
+    if (v == null || v === '' || v === 0 || v === '0') return null;
+    if (typeof v === 'number') return (v > 10000000000 ? v : (v > 0 ? v * 1000 : null));
+    var t = Date.parse(v);
+    if (!t || isNaN(t) || t < 946684800000) return null; // reject pre-2000 / epoch junk
+    return t;
+  }
+
   function getPlanInfo(acc) {
     if (!acc) return { rechargeDate: null, expiryDate: null, daysLeft: 0, expired: true, expiringSoon: false, planDays: 30, isPoints: false };
     const s = ILPSettings.get();
     const planDays = s.planDays || 30;
-    const rechargeDate = acc.rechargeDate || acc.approvedAt || null;
+    const rechargeDate = safeTs(acc.rechargeDate) || safeTs(acc.approvedAt) || null;
 
-    // POINTS plan never expires by calendar date — access is controlled by points_balance / ILP_WALLET
-    if (acc.plan_type === 'POINTS') {
+    // POINTS = no calendar validity (only points_balance matters)
+    const isPoints = String(acc.plan_type || '').toUpperCase() === 'POINTS' ||
+      (!acc.expiryDate && (Number(acc.points_balance) || 0) > 0 && String(acc.plan_type || '').toUpperCase() !== 'UNLIMITED');
+
+    if (isPoints) {
       return { rechargeDate, expiryDate: null, daysLeft: 0, expired: false, expiringSoon: false, planDays: 0, isPoints: true };
     }
 
-    // Unlimited / time-based: use explicit expiryDate only.
-    // Do NOT invent expiry from rechargeDate (that broke POINTS users and admin-approved accounts).
-    const expiryDate = acc.expiryDate || null;
+    // UNLIMITED only: use real expiryDate; never invent epoch dates
+    let expiryDate = safeTs(acc.expiryDate);
     const now = Date.now();
     let daysLeft = 0, expired = false, expiringSoon = false;
     if (expiryDate) {
@@ -6048,7 +6058,6 @@
       expired = now > expiryDate;
       expiringSoon = !expired && daysLeft <= 5;
     }
-    // approved + no expiryDate → still active (legacy admin approve / points without plan_type flag)
     return { rechargeDate, expiryDate, daysLeft, expired, expiringSoon, planDays, isPoints: false };
   }
 
@@ -6144,8 +6153,18 @@
   function show(id) { const e = gEl(id); if (e) e.style.display = 'flex'; }
   function hide(id) { const e = gEl(id); if (e) e.style.display = 'none'; }
   function hideAllAuthModals() { ['ilpPayModal','ilpPendingModal','ilpExpiredModal','ilpUserDash','ilpLoginModal','ilpRegModal'].forEach(hide); }
-  function fmtDate(ts) { if (!ts) return '-'; return new Date(ts).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
-  function fmtDateTime(ts) { if (!ts) return '-'; return new Date(ts).toLocaleString('en-IN'); }
+  function fmtDate(ts) {
+    if (!ts) return '-';
+    var t = (typeof ts === 'number') ? ts : Date.parse(ts);
+    if (!t || isNaN(t) || t < 946684800000) return '-'; // ignore invalid / epoch
+    return new Date(t).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+  function fmtDateTime(ts) {
+    if (!ts) return '-';
+    var t = (typeof ts === 'number') ? ts : Date.parse(ts);
+    if (!t || isNaN(t) || t < 946684800000) return '-';
+    return new Date(t).toLocaleString('en-IN');
+  }
 
   /* ---------- Badge ---------- */
   function refreshBadge() {
@@ -6333,10 +6352,20 @@ password: acc.password || acc.mobile, status: acc.status, amount: acc.amount,
         try {
           const r = await fetch(url + (url.includes('?') ? '&' : '?') + 'action=get_user&mobile=' + encodeURIComponent(acc.mobile));
           const d = await r.json();
-          if (d && d.mobile) {
-            acc.status = d.status || acc.status;
-            if (d.rechargeDate) acc.rechargeDate = Date.parse(d.rechargeDate) || acc.rechargeDate;
-            if (d.expiryDate) acc.expiryDate = Date.parse(d.expiryDate) || acc.expiryDate;
+          const u = (d && d.user) ? d.user : d;
+          if (u && (u.mobile || d.ok)) {
+            acc.status = u.status || acc.status;
+            if (u.plan_type) acc.plan_type = u.plan_type;
+            if (u.points_balance != null) acc.points_balance = Number(u.points_balance) || 0;
+            var rd = safeTs(u.rechargeDate);
+            if (rd) acc.rechargeDate = rd;
+            // Only store expiry for UNLIMITED; clear for POINTS
+            if (String(acc.plan_type || '').toUpperCase() === 'POINTS') {
+              acc.expiryDate = null;
+            } else {
+              var ed = safeTs(u.expiryDate);
+              if (ed) acc.expiryDate = ed;
+            }
             LS.set(K.ACC, acc);
             Users.upsert(acc);
           }
@@ -6346,9 +6375,18 @@ password: acc.password || acc.mobile, status: acc.status, amount: acc.amount,
       refreshBadge();
       if (fresh && fresh.status === 'approved') {
         const plan = getPlanInfo(fresh);
+        if (plan.isPoints) {
+          hideAllAuthModals();
+          alert('🎉 Approved! Points plan active.\n\nPoints balance: ' + (Number(fresh.points_balance) || 0) + '\n(No expiry date — points never expire.)');
+          return;
+        }
         if (plan.expired) return this.showExpired();
         hideAllAuthModals();
-        alert('🎉 Approved! Plan active until ' + fmtDate(plan.expiryDate) + '.');
+        if (plan.expiryDate) {
+          alert('🎉 Approved! Unlimited plan active until ' + fmtDate(plan.expiryDate) + '.');
+        } else {
+          alert('🎉 Approved! Your plan is active.');
+        }
       } else if (fresh && (fresh.status === 'rejected' || fresh.status === 'suspended')) {
         alert('Status: ' + fresh.status + '. Contact admin.');
       } else {
@@ -8231,34 +8269,34 @@ ILP_AUTH.submitRegistration = async function () {
           const acc = ILP_AUTH.getAccount() || {};
           acc.status = 'approved';
           acc.rechargeDate = Date.now();
-          if (data.planType === 'UNLIMITED') {
-            acc.expiryDate = data.expiryDate ? Date.parse(data.expiryDate) : (Date.now() + 30 * 86400000);
+          var planType = String(data.planType || (data.user && data.user.plan_type) || 'POINTS').toUpperCase();
+          if (planType === 'UNLIMITED') {
+            // Exactly 1 month from now (or server-provided valid date)
+            var ed = data.expiryDate ? Date.parse(data.expiryDate) : NaN;
+            if (!ed || isNaN(ed) || ed < Date.now()) {
+              ed = Date.now() + 30 * 86400000;
+            }
+            acc.expiryDate = ed;
             acc.plan_type = 'UNLIMITED';
           } else {
-            // POINTS (or default)
-            const pts = Number(data.currentPoints != null ? data.currentPoints : data.points) || 0;
+            // POINTS — never set validity
+            const pts = Number(
+              data.currentPoints != null ? data.currentPoints
+                : (data.user && data.user.points_balance != null ? data.user.points_balance : data.points)
+            ) || 0;
             acc.points_balance = pts;
             acc.expiryDate = null;
             acc.plan_type = 'POINTS';
           }
-          if (data.user) {
-            if (data.user.points_balance != null) acc.points_balance = Number(data.user.points_balance) || acc.points_balance;
-            if (data.user.expiryDate) acc.expiryDate = Date.parse(data.user.expiryDate);
-            if (data.user.plan_type) acc.plan_type = data.user.plan_type;
-          }
           localStorage.setItem('iloveprint_account', JSON.stringify(acc));
           if (typeof refreshBadge === 'function') refreshBadge();
           ILP_AUTH.hideAll();
-          alert('🎉 Payment Successful!\n\n' +
-            (acc.plan_type === 'POINTS'
-              ? ('Points balance: ' + (acc.points_balance || 0))
-              : 'Unlimited plan active until: ' + (acc.expiryDate ? new Date(acc.expiryDate).toLocaleDateString() : '—')));
-          setTimeout(function () {
-            try {
-              if (typeof revalidate === 'function') revalidate();
-              else if (ILP_AUTH.checkStatus) ILP_AUTH.checkStatus();
-            } catch (_) {}
-          }, 1200);
+          if (acc.plan_type === 'POINTS') {
+            alert('🎉 Payment Successful!\n\nPoints balance: ' + (acc.points_balance || 0) + '\n(No expiry — points do not expire.)');
+          } else {
+            alert('🎉 Payment Successful!\n\nUnlimited plan active until: ' +
+              new Date(acc.expiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }));
+          }
         } else {
           alert('Verification pending or failed: ' + (data.msg || 'Order not paid yet.') +
             '\n\nIf money was deducted, wait 1–2 minutes and press Check Status, or contact admin.');
