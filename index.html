@@ -8429,17 +8429,21 @@ ILP_AUTH.submitRegistration = async function () {
   function _ensureFreeMap(acc) {
     if (!acc.free_modules || typeof acc.free_modules !== 'object') {
       acc.free_modules = {};
-      MODULE_KEYS.forEach(function (k) { acc.free_modules[k] = 1; }); // 1 free each
+      MODULE_KEYS.forEach(function (k) { acc.free_modules[k] = 1; });
     } else {
       MODULE_KEYS.forEach(function (k) {
         if (acc.free_modules[k] === undefined || acc.free_modules[k] === null) {
-          // only grant if never tracked (legacy) — once 0, stay 0
-          if (acc.free_trial_granted) acc.free_modules[k] = 0;
-          else acc.free_modules[k] = 1;
+          acc.free_modules[k] = acc.free_trial_granted ? 0 : 1;
         }
       });
     }
     return acc.free_modules;
+  }
+  function _sessionUnlockKey(moduleKey) { return 'ilp_job_unlock_' + moduleKey; }
+  function _isSessionUnlocked(moduleKey) { return sessionStorage.getItem(_sessionUnlockKey(moduleKey)) === '1'; }
+  function _setSessionUnlocked(moduleKey, on) {
+    if (on) sessionStorage.setItem(_sessionUnlockKey(moduleKey), '1');
+    else sessionStorage.removeItem(_sessionUnlockKey(moduleKey));
   }
   function _currentModule() {
     // Infer from body class or visible section
@@ -8534,7 +8538,11 @@ ILP_AUTH.submitRegistration = async function () {
       return Number(m[moduleKey]) > 0 ? 1 : 0;
     },
 
-    /** Can user start work on this module? (open tool / upload) */
+    /**
+     * Can user continue this module job?
+     * TRUE if: unlimited / paid points / free left for module / already unlocked this session
+     * (unlock is set once after a successful charge on first upload)
+     */
     canUse: function (cost, moduleKey) {
       cost = cost == null ? 1 : cost;
       moduleKey = moduleKey || _currentModule();
@@ -8546,19 +8554,21 @@ ILP_AUTH.submitRegistration = async function () {
         return false;
       }
       if (_hasUnlimited(acc)) return true;
+      // Already paid for this module job in this browser session → allow capture/add/print
+      if (_isSessionUnlocked(moduleKey)) return true;
+
       var pts = Number(acc.points_balance) || 0;
       if (pts >= cost) return true;
       if (this.moduleFreeLeft(moduleKey, acc) >= cost) return true;
 
-      // Same module free already used → Hindi recharge only now
       _showRechargeHi(moduleKey);
       return false;
     },
 
     /**
-     * Call as soon as user uploads / pastes into a module.
-     * Debits 1 free module-point OR 1 paid point.
-     * Returns true if allowed, false if blocked (shows Hindi recharge).
+     * Call on upload / paste / drop.
+     * First success charges 1 free OR 1 point and unlocks the module session.
+     * Second NEW upload after free is gone → block (returns false).
      */
     consumeOnInput: function (moduleKey) {
       moduleKey = moduleKey || _currentModule();
@@ -8569,14 +8579,13 @@ ILP_AUTH.submitRegistration = async function () {
         if (window.ILP_AUTH) ILP_AUTH.showRegistration();
         return false;
       }
-      if (_hasUnlimited(acc)) return true;
+      if (_hasUnlimited(acc)) {
+        _setSessionUnlocked(moduleKey, true);
+        return true;
+      }
 
-      // Already charged for this "session input"? allow multiple files in same session
-      // without multi-debit: track last charged module+minute
-      var stampKey = 'ilp_charged_' + moduleKey;
-      var last = sessionStorage.getItem(stampKey);
-      var now = String(Math.floor(Date.now() / 60000)); // per minute bucket
-      if (last === now) return true;
+      // Already unlocked this job → allow more files in same job without re-billing
+      if (_isSessionUnlocked(moduleKey)) return true;
 
       var pts = Number(acc.points_balance) || 0;
       var map = _ensureFreeMap(acc);
@@ -8585,7 +8594,7 @@ ILP_AUTH.submitRegistration = async function () {
         acc.points_balance = pts - 1;
         acc.free_trial_granted = true;
         _accSave(acc);
-        sessionStorage.setItem(stampKey, now);
+        _setSessionUnlocked(moduleKey, true);
         _refreshPtsBadge(acc);
         _syncDebitCloud(acc, 1, moduleKey + '_input');
         return true;
@@ -8594,20 +8603,20 @@ ILP_AUTH.submitRegistration = async function () {
         map[moduleKey] = 0;
         acc.free_modules = map;
         acc.free_trial_granted = true;
-        // keep free_remaining as total for older code
         acc.free_remaining = _totalFreeLeft(acc);
         _accSave(acc);
-        sessionStorage.setItem(stampKey, now);
+        _setSessionUnlocked(moduleKey, true);
         _refreshPtsBadge(acc);
         _syncDebitCloud(acc, 1, moduleKey + '_free');
         return true;
       }
 
+      // No credit — HARD BLOCK
       _showRechargeHi(moduleKey);
       return false;
     },
 
-    /** Used by print buttons — prefer not double-charging if input already charged this minute */
+    /** Print/add debit — no double charge if session already unlocked */
     debit: function (serviceName, cost) {
       cost = cost == null ? 1 : cost;
       var acc = _accGet();
@@ -8616,12 +8625,8 @@ ILP_AUTH.submitRegistration = async function () {
       if (_hasUnlimited(acc)) return;
 
       var moduleKey = _currentModule();
-      var stampKey = 'ilp_charged_' + moduleKey;
-      var now = String(Math.floor(Date.now() / 60000));
-      // If we already charged on upload/paste this minute, skip print debit
-      if (sessionStorage.getItem(stampKey) === now && cost <= 1) {
-        return;
-      }
+      // Already charged when user uploaded → do not charge again for print/add
+      if (_isSessionUnlocked(moduleKey)) return;
 
       var pts = Number(acc.points_balance) || 0;
       var map = _ensureFreeMap(acc);
@@ -8633,39 +8638,59 @@ ILP_AUTH.submitRegistration = async function () {
         acc.free_modules = map;
         acc.free_remaining = _totalFreeLeft(acc);
       } else {
-        // not enough — don't go negative; print path should have called canUse
         return;
       }
       acc.free_trial_granted = true;
       _accSave(acc);
-      sessionStorage.setItem(stampKey, now);
+      _setSessionUnlocked(moduleKey, true);
       _refreshPtsBadge(acc);
       _syncDebitCloud(acc, cost, serviceName || moduleKey);
+    },
+
+    /** Call when leaving a module so next visit needs a new free/point */
+    endModuleSession: function (moduleKey) {
+      moduleKey = moduleKey || _currentModule();
+      _setSessionUnlocked(moduleKey, false);
     }
   };
 
   window.ILP_CASHFREE = ILP_CASHFREE;
 
-  // Track active module when switching sections
+  // Track active module; end previous module job when switching away
   (function () {
     var _sw = window.switchSuiteSection;
     if (typeof _sw === 'function') {
       window.switchSuiteSection = function (mode) {
+        var prev = window.__ILP_ACTIVE_MODULE;
         var key = mode;
         if (mode === 'smartid' || mode === 'smart-id') key = 'id';
         if (mode === 'one-click-card') key = 'oneclick';
+        if (mode === 'landing' || mode === 'home') {
+          // Leaving tools → lock finished free jobs so reopen needs new credit
+          if (prev && window.ILP_WALLET && window.ILP_WALLET.endModuleSession) {
+            window.ILP_WALLET.endModuleSession(prev);
+          }
+        } else if (prev && prev !== key && window.ILP_WALLET && window.ILP_WALLET.endModuleSession) {
+          window.ILP_WALLET.endModuleSession(prev);
+        }
         if (MODULE_KEYS.indexOf(key) >= 0) window.__ILP_ACTIVE_MODULE = key;
         return _sw.apply(this, arguments);
       };
     }
   })();
 
-  // Debit on ANY file upload or paste while a module is open
+  // HARD block file / paste / drop when no credit (preventDefault + clear input)
   document.addEventListener('change', function (e) {
     var t = e.target;
     if (!t || t.tagName !== 'INPUT' || t.type !== 'file') return;
     if (!t.files || !t.files.length) return;
-    if (window.ILP_WALLET) window.ILP_WALLET.consumeOnInput();
+    if (!window.ILP_WALLET) return;
+    var ok = window.ILP_WALLET.consumeOnInput();
+    if (!ok) {
+      e.stopPropagation();
+      e.preventDefault();
+      try { t.value = ''; } catch (err) {}
+    }
   }, true);
 
   document.addEventListener('paste', function (e) {
@@ -8677,23 +8702,31 @@ ILP_AUTH.submitRegistration = async function () {
         if (items[i].type && items[i].type.indexOf('image') === 0) { hasImage = true; break; }
       }
       if (!hasImage) return;
-      if (window.ILP_WALLET) window.ILP_WALLET.consumeOnInput();
+      if (!window.ILP_WALLET) return;
+      var ok = window.ILP_WALLET.consumeOnInput();
+      if (!ok) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
     } catch (err) {}
   }, true);
 
-  // Drop support
   document.addEventListener('drop', function (e) {
     try {
       var dt = e.dataTransfer;
       if (!dt || !dt.files || !dt.files.length) return;
-      // only if image/pdf-ish
-      var ok = false;
+      var okFile = false;
       for (var i = 0; i < dt.files.length; i++) {
         var f = dt.files[i];
-        if (/image|pdf/i.test(f.type || '') || /\.(png|jpe?g|webp|pdf)$/i.test(f.name || '')) { ok = true; break; }
+        if (/image|pdf/i.test(f.type || '') || /\.(png|jpe?g|webp|pdf)$/i.test(f.name || '')) { okFile = true; break; }
       }
-      if (!ok) return;
-      if (window.ILP_WALLET) window.ILP_WALLET.consumeOnInput();
+      if (!okFile) return;
+      if (!window.ILP_WALLET) return;
+      var ok = window.ILP_WALLET.consumeOnInput();
+      if (!ok) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
     } catch (err) {}
   }, true);
 
