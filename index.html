@@ -884,6 +884,8 @@
       #landingSection,
       #bgaiSection,
       #jointSection,
+      #oneClickCardSection,
+      #bandhkamSection,
       #dynamicModuleSection { 
         display: none !important; 
       }
@@ -1032,6 +1034,8 @@
       body.mode-cropper #bgaiSection,
       body.mode-cropper #landingSection,
       body.mode-cropper #jointSection,
+      body.mode-cropper #oneClickCardSection,
+      body.mode-cropper #bandhkamSection,
       body.mode-cropper #dynamicModuleSection,
       body.mode-cropper .app-container,
       body.mode-cropper .site-top-header,
@@ -1238,6 +1242,23 @@
             <span>Open Bandhkam Kamgar Card</span><span>➔</span>
           </div>
         </div>
+
+        <div class="landing-hub-card" role="link" tabindex="0"
+     onclick="openOneClickCardModule()"
+     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openOneClickCardModule();}">
+          <div>
+            <div class="l-card-top">
+              <div class="l-card-icon" style="background:#eef2ff;color:#4f46e5;">🪪</div>
+              <span class="l-badge-pill" style="background:#e0e7ff;color:#3730a3;">One-Click Suite</span>
+            </div>
+            <h3>One-Click ID Card Maker</h3>
+            <p>Aadhar, PAN, Voter, ABHA, Ayushman, e-Shram, Ration &amp; more — auto-crop front &amp; back, enhance photo, print A4 / 4×6 / PVC.</p>
+          </div>
+          <div class="l-card-btn" style="color:#4f46e5;">
+            <span>Open One-Click Card Suite</span><span>➔</span>
+          </div>
+        </div>
+
 </div>
     </section>
 
@@ -1935,6 +1956,33 @@
             title="Bandhkam Kamgar Card Maker"></iframe>
   </div>
 </div>
+
+<!-- 7. ONE-CLICK ID CARD MAKER SUITE -->
+<div id="oneClickCardSection" style="display:none;">
+  <div class="card no-print" style="margin-bottom: 20px;">
+    <div class="top-bar">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <button class="home-nav-btn" onclick="switchSuiteSection('landing')">
+          🏠 Return to Home / Hub
+        </button>
+        <div>
+          <h2>🪪 One-Click ID Card Maker Suite</h2>
+          <small>Aadhar · PAN · Voter · ABHA · Ayushman · e-Shram · Ration · Auto crop &amp; print</small>
+        </div>
+      </div>
+      <div class="usage-badge">
+        <span>🪪 One-Click Suite · 1 pt / print</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:0; overflow:hidden; background:transparent; border:none; box-shadow:none;">
+    <iframe id="oneClickCardFrame"
+            style="width:100%; height:calc(100vh - 200px); min-height:900px; border:0; display:block; background:#0d1117; border-radius:24px;"
+            title="One-Click ID Card Maker"></iframe>
+  </div>
+</div>
+
 <!-- MIDDLE ADSENSE UNIT -->
     <div class="adsense-container no-print">
       <span class="ad-label">Advertisement</span>
@@ -5435,15 +5483,14 @@
   /* ---- Base64 decoder wrapper (obfuscation, not encryption) ---- */
   const _d = (b64) => { try { return atob(b64); } catch (e) { return ''; } };
 
-  /* ---- Encoded secrets (base64). Change values by re-encoding in base64. ---- */
-  const _USER_B64 = 'c2FqaWQ3MjU0';            /* sajid7254         */
-  const _PASS_B64 = 'SGVlbmFANzI1NA==';        /* Heena@7254        */
+  /* ---- Encoded secrets (base64). ADMIN CREDENTIALS REMOVED FROM CLIENT.
+     Admin login now verifies against Google Sheet via cloud action 'admin_login'.
+     UPI kept only as emergency fallback; prefer Settings sheet. ---- */
   const _UPI_B64  = 'OTc2Nzc4NTM1M0BtYms=';    /* 9767785353@mbk    */
 
-  /* ---- SHA-256 hash helper (password is never compared as plaintext) ---- */
+  /* ---- SHA-256 hash helper ---- */
   async function _hash(str) {
     if (!window.crypto || !crypto.subtle) {
-      /* Fallback DJB2-ish hash if SubtleCrypto is unavailable */
       let h = 5381;
       for (let i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i);
       return 'fb_' + (h >>> 0).toString(36);
@@ -5454,14 +5501,8 @@
       .map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
-  /* Pre-compute the admin password hash once at startup */
-  let _passHash = null;
-  _hash(_d(_PASS_B64)).then(h => { _passHash = h; });
-
-  /* ---- Public façade ---- */
+  /* ---- Public façade (NO admin user/pass stored in HTML anymore) ---- */
   window.ILP_SECRET = {
-    user:     () => _d(_USER_B64),
-    passHash: () => _passHash,
     hash:     _hash,
     upi:      () => _d(_UPI_B64)
   };
@@ -5927,9 +5968,9 @@
     qrUrl: '',
     sheetUrl: ''
   };
-  /* Admin username pulled from obfuscated secret.
-     Admin password is never stored in plaintext — only its SHA-256 hash. */
-  const ADMIN_USER = (window.ILP_SECRET && ILP_SECRET.user) ? ILP_SECRET.user() : '\x00';
+  /* Admin credentials are NO LONGER in client code.
+     Login verifies against Google Sheet (Settings!adminUser / adminPass)
+     via cloud action 'admin_login'. */
   const K = {
     ACC: 'iloveprint_account',
     USERS: 'iloveprint_users_db',
@@ -6001,10 +6042,19 @@
 
   /* ---------- Plan helpers ---------- */
   function getPlanInfo(acc) {
+    if (!acc) return { rechargeDate: null, expiryDate: null, daysLeft: 0, expired: true, expiringSoon: false, planDays: 30, isPoints: false };
     const s = ILPSettings.get();
     const planDays = s.planDays || 30;
     const rechargeDate = acc.rechargeDate || acc.approvedAt || null;
-    const expiryDate = acc.expiryDate || (rechargeDate ? rechargeDate + planDays * DAY_MS : null);
+
+    // POINTS plan never expires by calendar date — access is controlled by points_balance / ILP_WALLET
+    if (acc.plan_type === 'POINTS') {
+      return { rechargeDate, expiryDate: null, daysLeft: 0, expired: false, expiringSoon: false, planDays: 0, isPoints: true };
+    }
+
+    // Unlimited / time-based: use explicit expiryDate only.
+    // Do NOT invent expiry from rechargeDate (that broke POINTS users and admin-approved accounts).
+    const expiryDate = acc.expiryDate || null;
     const now = Date.now();
     let daysLeft = 0, expired = false, expiringSoon = false;
     if (expiryDate) {
@@ -6012,7 +6062,8 @@
       expired = now > expiryDate;
       expiringSoon = !expired && daysLeft <= 5;
     }
-    return { rechargeDate, expiryDate, daysLeft, expired, expiringSoon, planDays };
+    // approved + no expiryDate → still active (legacy admin approve / points without plan_type flag)
+    return { rechargeDate, expiryDate, daysLeft, expired, expiringSoon, planDays, isPoints: false };
   }
 
   /* ---------- Users DB ---------- */
@@ -6136,6 +6187,9 @@
     isApproved() {
       const a = LS.get(K.ACC, null);
       if (!a || a.status !== 'approved') return false;
+      // POINTS plan is always "approved" for access; wallet checks balance on use
+      if (a.plan_type === 'POINTS') return true;
+      if (a.expiryDate && Date.now() < a.expiryDate) return true;
       const plan = getPlanInfo(a);
       return !plan.expired;
     },
@@ -6162,6 +6216,15 @@
         return alert('This mobile number is already registered. Please use Login instead.');
       }
       const s = ILPSettings.get();
+      // Free trial once per mobile (anti-abuse)
+      let freeRem = 0, trialGranted = false;
+      if (existing) {
+        freeRem = (existing.free_remaining != null) ? Number(existing.free_remaining) : 0;
+        trialGranted = !!existing.free_trial_granted;
+      } else {
+        freeRem = 3;
+        trialGranted = true;
+      }
       const account = {
         name: name, shopName: shop, mobile: mobile, address: addr,
         password: pass,
@@ -6172,6 +6235,9 @@
         registeredAt: (existing && existing.registeredAt) || Date.now(),
         rechargeDate: existing ? existing.rechargeDate : null,
         expiryDate:   existing ? existing.expiryDate   : null,
+        points_balance: existing ? (Number(existing.points_balance) || 0) : 0,
+        free_remaining: freeRem,
+        free_trial_granted: trialGranted,
         stats: (existing && existing.stats) || emptyStats()
       };
       LS.set(K.ACC, account);
@@ -6184,6 +6250,8 @@
         password: pass,
         status: account.status, amount: account.amount,
         registeredAt: new Date(account.registeredAt).toISOString(),
+        free_remaining: account.free_remaining,
+        free_trial_granted: account.free_trial_granted,
         stats: account.stats
       });
       addLog('registration', name + ' / ' + shop + ' / ' + mobile);
@@ -6197,6 +6265,9 @@
         alert('Welcome back! Your plan is active.'); return;
       }
       if (account.status === 'pending_approval') return this.showPending();
+      if (freeRem > 0) {
+        alert('✅ Account created!\n\n🎁 You have ' + freeRem + ' FREE trial uses.\nAfter that recharge or buy Unlimited.\n\nPay now for uninterrupted access, or try free uses first.');
+      }
       this.showPaymentModal();
     },  
     submitLogin() {
@@ -6383,38 +6454,48 @@ password: acc.password || acc.mobile, status: acc.status, amount: acc.amount,
     },
     closeAdminLogin() { hide('ilpAdminLoginModal'); },
 
-        closeAdminLogin() { hide('ilpAdminLoginModal'); },
-
-    /* Hash-verified admin login — pure client, no server round-trip */
+    /* Cloud-verified admin login — credentials live ONLY in Google Sheet Settings */
     async adminLogin() {
       const u = gEl('ilpAdminUser').value.trim();
       const p = gEl('ilpAdminPass').value;
 
       if (!u || !p) return alert('Please enter both username and password.');
 
-      if (!window.ILP_SECRET || typeof ILP_SECRET.hash !== 'function') {
-        return alert('❌ Security module not loaded.');
+      if (typeof window.ILP_CLOUD !== 'function') {
+        return alert('Cloud module not ready yet. Wait 2 seconds and try again, or check that the Google Apps Script URL is set.');
       }
-      let stored = ILP_SECRET.passHash();
-      if (!stored) { await new Promise(r => setTimeout(r, 300)); stored = ILP_SECRET.passHash(); }
 
-      const inputHash = await ILP_SECRET.hash(p);
+      if (typeof busy === 'function') busy(true, 'Verifying admin credentials…');
+      try {
+        const r = await window.ILP_CLOUD({ action: 'admin_login', user: u, pass: p });
+        if (typeof busy === 'function') busy(false);
 
-      if (u === ADMIN_USER && stored && inputHash === stored) {
-        sessionStorage.setItem(K.ADMIN, '1');
-        sessionStorage.setItem('iloveprint_admin_session', '1');
-        sessionStorage.setItem('iloveprint_admin_key', 'ILP-SECURE-ADMIN-2026');
-        hide('ilpAdminLoginModal');
-        ILP_ADMIN.open();
-        addLog('admin_login', 'Admin logged in');
-      } else {
-        await new Promise(r => setTimeout(r, 700));
-        alert('❌ Invalid credentials.');
+        if (r && r.ok) {
+          sessionStorage.setItem(K.ADMIN, '1');
+          sessionStorage.setItem('iloveprint_admin_session', '1');
+          // Prefer key returned by server; never use a hardcoded fallback
+          if (r.adminKey) {
+            sessionStorage.setItem('iloveprint_admin_key', r.adminKey);
+          } else {
+            sessionStorage.removeItem('iloveprint_admin_key');
+          }
+          hide('ilpAdminLoginModal');
+          ILP_ADMIN.open();
+          addLog('admin_login', 'Admin logged in (cloud-verified)');
+        } else {
+          await new Promise(res => setTimeout(res, 600));
+          alert('❌ Invalid credentials or server rejected login.\n\n' + ((r && r.msg) || ''));
+        }
+      } catch (err) {
+        if (typeof busy === 'function') busy(false);
+        alert('Cannot reach server for admin login:\n' + (err.message || err));
       }
     },
 
     adminLogout() {
       sessionStorage.removeItem(K.ADMIN);
+      sessionStorage.removeItem('iloveprint_admin_session');
+      sessionStorage.removeItem('iloveprint_admin_key');
       hide('ilpAdminDash');
       addLog('admin_logout', '');
     }
@@ -6695,14 +6776,31 @@ password: acc.password || acc.mobile, status: acc.status, amount: acc.amount,
       const adminIn = sessionStorage.getItem(K.ADMIN) === '1';
       if (mode && mode !== 'landing' && !adminIn) {
         if (!acc) { ILP_AUTH.showRegistration(); addLog('gate_block', 'unregistered → ' + mode); return; }
-        if (acc.status !== 'approved') {
-          if (acc.status === 'pending_payment') ILP_AUTH.showPaymentModal();
-          else ILP_AUTH.showPending();
+
+        // Allow tool open if: approved (active) OR free trial remaining OR has points
+        const hasActiveUnlimited = acc.status === 'approved' && acc.expiryDate && Date.now() < acc.expiryDate;
+        const hasPoints = (Number(acc.points_balance) || 0) > 0;
+        let freeLeft = 0;
+        try { freeLeft = (window.ILP_WALLET && window.ILP_WALLET.freeRemaining) ? window.ILP_WALLET.freeRemaining(acc) : 0; } catch(e) {}
+
+        if (acc.status === 'pending_approval') {
+          ILP_AUTH.showPending();
+          addLog('gate_block', 'pending_approval → ' + mode);
+          return;
+        }
+        if (acc.status === 'rejected' || acc.status === 'suspended') {
+          alert('Your account is ' + acc.status + '. Contact admin.');
           addLog('gate_block', acc.status + ' → ' + mode);
           return;
         }
-        const plan = getPlanInfo(acc);
-        if (plan.expired) { ILP_AUTH.showExpired(); addLog('gate_block', 'expired → ' + mode); return; }
+
+        // pending_payment or approved-but-expired: allow only if free trial or points left
+        if (!hasActiveUnlimited && !hasPoints && freeLeft <= 0) {
+          ILP_AUTH.showPaymentModal();
+          addLog('gate_block', (acc.status || 'no_credit') + ' → ' + mode);
+          return;
+        }
+
         addLog('tool_open', mode);
       }
       return _origSwitch.apply(this, arguments);
@@ -7353,7 +7451,8 @@ function json(obj) {
   }
 
   function adminKey() { 
-  return sessionStorage.getItem(AKEY_SES) || 'ILP-SECURE-ADMIN-2026'; 
+  // NO hardcoded fallback. Key must come from successful cloud admin_login.
+  return sessionStorage.getItem(AKEY_SES) || '';
 }
 
   /* ---------------- cloud transport (GET, CORS-safe) ---------------- */
@@ -7375,6 +7474,9 @@ function json(obj) {
       }
     } finally { clearTimeout(timer); }
   }
+  // Expose for other modules (admin login lives outside this IIFE)
+  window.ILP_CLOUD = cloud;
+  window.ILP_CLOUD_URL = cloudUrl;
 
   /* ---------------- busy overlay ---------------- */
   let busyEl = null;
@@ -7403,6 +7505,40 @@ function json(obj) {
   /* ---------------- account mapping ---------------- */
   function saveAccountFromServer(u) {
     const prev = LS.get(ACC_KEY, {}) || {};
+    // Prefer server plan_type; fall back to previous local value
+    const planType = u.plan_type || u.planType || prev.plan_type || null;
+    // Points: server value wins when present; otherwise keep local so revalidate doesn't wipe balance
+    const serverPts = (u.points_balance != null) ? Number(u.points_balance)
+                    : (u.points != null) ? Number(u.points)
+                    : (u.currentPoints != null) ? Number(u.currentPoints)
+                    : null;
+    const pointsBalance = serverPts != null ? serverPts : (Number(prev.points_balance) || 0);
+
+    // Expiry: for POINTS plan always null; otherwise server wins when provided
+    let expiryDate;
+    if (planType === 'POINTS') {
+      expiryDate = null;
+    } else if (u.expiryDate) {
+      expiryDate = Date.parse(u.expiryDate);
+    } else if (u.expiryDate === null || u.expiryDate === '') {
+      // Server explicitly cleared expiry (e.g. switched to points)
+      expiryDate = null;
+    } else {
+      expiryDate = prev.expiryDate || null;
+    }
+
+    // Free trial: server value wins; never increase above what was already granted
+    let freeRem = (u.free_remaining != null) ? Number(u.free_remaining)
+                : (prev.free_remaining != null) ? Number(prev.free_remaining)
+                : null;
+    const trialGranted = !!(u.free_trial_granted || prev.free_trial_granted);
+    if (freeRem === null && !trialGranted) {
+      freeRem = 3; // first time only
+    } else if (freeRem === null && trialGranted) {
+      freeRem = 0;
+    }
+    freeRem = Math.max(0, Math.min(3, freeRem)); // hard cap — cannot be raised by client tricks
+
     const acc = {
       name: u.name || prev.name || '',
       shopName: u.shopName || prev.shopName || '',
@@ -7415,8 +7551,12 @@ function json(obj) {
       paidAt: u.paidAt ? Date.parse(u.paidAt) : prev.paidAt || null,
       approvedAt: u.approvedAt ? Date.parse(u.approvedAt) : prev.approvedAt || null,
       rechargeDate: u.rechargeDate ? Date.parse(u.rechargeDate) : prev.rechargeDate || null,
-      expiryDate: u.expiryDate ? Date.parse(u.expiryDate) : prev.expiryDate || null,
+      expiryDate: expiryDate,
       planDays: u.planDays || prev.planDays || cfg().planDays,
+      plan_type: planType,
+      points_balance: pointsBalance,
+      free_remaining: freeRem,
+      free_trial_granted: trialGranted || freeRem < 3,
       stats: u.stats || prev.stats || { idCards:0, passportPhotos:0, cropperPrints:0, bgRemovals:0, enhancements:0 },
       lastSync: Date.now()
     };
@@ -7571,9 +7711,37 @@ ILP_AUTH.submitRegistration = async function () {
   }
 
   const acc = saveAccountFromServer(r.user);
+
+  // Grant free trial ONCE per mobile (anti-abuse: never reset if already granted)
+  if (acc.free_remaining === undefined || acc.free_remaining === null) {
+    if (!acc.free_trial_granted) {
+      acc.free_remaining = 3;          // 3 free uses
+      acc.free_trial_granted = true;
+    } else {
+      acc.free_remaining = 0;          // already used trial on this mobile before
+    }
+    localStorage.setItem('iloveprint_account', JSON.stringify(acc));
+  }
+
   try { const om = $('userRegistrationModal'); if (om) om.style.display = 'none'; } catch (e) {}
   refreshBadge();
-  routeByStatus(acc);
+
+  // Always show payment modal after registration, but inform about free trial
+  const freeLeft = Number(acc.free_remaining) || 0;
+  if (freeLeft > 0 && (acc.status === 'pending_payment' || !acc.status)) {
+    alert(
+      '✅ Account created!\n\n' +
+      '🎁 You have ' + freeLeft + ' FREE trial uses.\n' +
+      'After that you need to recharge points or buy Unlimited.\n\n' +
+      'You can pay now for uninterrupted access, or try the free uses first.'
+    );
+  }
+  // Force payment modal so conversion is high; user can close and still use free trial
+  if (acc.status === 'pending_payment' || acc.status === 'pending_approval') {
+    routeByStatus(acc);
+  } else {
+    routeByStatus(acc);
+  }
 };  /* ================================================================
      OVERRIDE — PAYMENT MARKED
      ================================================================ */
@@ -7785,8 +7953,36 @@ ILP_AUTH.submitRegistration = async function () {
     }
   }
 
-  ILP_ADMIN.approve = function (mobile) {
-    return adminCall('admin_status', { mobile, status: 'approved' }, 'Approving…');
+  ILP_ADMIN.approve = async function (mobile) {
+    // Ask admin how to activate the account (fixes validity / points management)
+    const choice = prompt(
+      'Approve ' + mobile + ' as:\n\n' +
+      '1 = Unlimited (set expiry = today + planDays)\n' +
+      '2 = Points (add points, no expiry)\n' +
+      '3 = Just mark Approved (no plan change)\n\n' +
+      'Enter 1, 2 or 3:',
+      '1'
+    );
+    if (choice === null) return;
+    const c = (choice || '1').trim();
+
+    if (c === '1') {
+      const days = cfg().planDays || 30;
+      return adminCall('admin_status', {
+        mobile, status: 'approved',
+        planType: 'UNLIMITED', days: days
+      }, 'Approving as Unlimited…');
+    } else if (c === '2') {
+      const ptsStr = prompt('How many points to grant to ' + mobile + '?', '50');
+      if (ptsStr === null) return;
+      const pts = Math.max(0, parseInt(ptsStr, 10) || 0);
+      return adminCall('admin_status', {
+        mobile, status: 'approved',
+        planType: 'POINTS', points: pts
+      }, 'Approving + granting ' + pts + ' points…');
+    } else {
+      return adminCall('admin_status', { mobile, status: 'approved' }, 'Approving…');
+    }
   };
   ILP_ADMIN.reject = function (mobile) {
     return adminCall('admin_status', { mobile, status: 'rejected' }, 'Rejecting…');
@@ -7798,6 +7994,17 @@ ILP_AUTH.submitRegistration = async function () {
     const days = cfg().planDays || 30;
     if (!confirm('Extend ' + mobile + "'s plan by " + days + " days?")) return;
     return adminCall('admin_extend', { mobile, days }, 'Extending…');
+  };
+  // New helper: grant points without full re-approve
+  ILP_ADMIN.grantPoints = function (mobile) {
+    const ptsStr = prompt('Grant how many points to ' + mobile + '?', '50');
+    if (ptsStr === null) return;
+    const pts = Math.max(0, parseInt(ptsStr, 10) || 0);
+    if (!pts) return alert('Enter a positive number.');
+    return adminCall('admin_status', {
+      mobile, status: 'approved',
+      planType: 'POINTS', points: pts, addPoints: true
+    }, 'Granting ' + pts + ' points…');
   };
   ILP_ADMIN.resetStats = function (mobile) {
     if (!confirm('Reset usage stats for ' + mobile + '?')) return;
@@ -7921,16 +8128,18 @@ ILP_AUTH.submitRegistration = async function () {
     const adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
     if (adminIn) return true;
     if (!acc) { window.ILP_AUTH.showRegistration(); return false; }
-    if (acc.status !== 'approved') {
-      if (acc.status === 'pending_payment') window.ILP_AUTH.showPaymentModal();
-      else window.ILP_AUTH.showPending();
-      return false;
+    if (acc.status === 'pending_approval') { window.ILP_AUTH.showPending(); return false; }
+    if (acc.status === 'rejected' || acc.status === 'suspended') {
+      alert('Your account is ' + acc.status + '. Contact admin.'); return false;
     }
-    if (acc.expiryDate && Date.now() > acc.expiryDate) {
-      window.ILP_AUTH.showExpired();
-      return false;
-    }
-    return true;
+    // Allow if unlimited active OR has points OR free trial remaining
+    const hasUnlimited = acc.status === 'approved' && acc.expiryDate && Date.now() < acc.expiryDate;
+    const hasPoints = (Number(acc.points_balance) || 0) > 0;
+    let freeLeft = 0;
+    try { freeLeft = (window.ILP_WALLET && window.ILP_WALLET.freeRemaining) ? window.ILP_WALLET.freeRemaining(acc) : (Number(acc.free_remaining) || 0); } catch(e) {}
+    if (hasUnlimited || hasPoints || freeLeft > 0) return true;
+    window.ILP_AUTH.showPaymentModal();
+    return false;
   }
 
   function openExternalModule(mode) {
@@ -7938,7 +8147,7 @@ ILP_AUTH.submitRegistration = async function () {
     if (!cfg) return false;
     if (!requireAuth()) return true; // handled (blocked)
 
-    ['landingSection','smartIdSection','passportSection','bgaiSection','cropperSection','dynamicModuleSection']
+    ['landingSection','smartIdSection','passportSection','bgaiSection','cropperSection','bandhkamSection','oneClickCardSection','dynamicModuleSection']
       .forEach(function (id) {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -7987,7 +8196,7 @@ ILP_AUTH.submitRegistration = async function () {
   const FRAME_ID      = 'bandhkamFrame';
   const OTHER_SECTIONS = [
     'landingSection','smartIdSection','passportSection',
-    'bgaiSection','cropperSection','jointSection','dynamicModuleSection'
+    'bgaiSection','cropperSection','jointSection','oneClickCardSection','dynamicModuleSection'
   ];
 
   function hideOthers() {
@@ -8002,16 +8211,17 @@ ILP_AUTH.submitRegistration = async function () {
     var adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
     if (adminIn) return true;
     if (!acc) { window.ILP_AUTH.showRegistration(); return false; }
-    if (acc.status !== 'approved') {
-      if (acc.status === 'pending_payment') window.ILP_AUTH.showPaymentModal();
-      else                                  window.ILP_AUTH.showPending();
-      return false;
+    if (acc.status === 'pending_approval') { window.ILP_AUTH.showPending(); return false; }
+    if (acc.status === 'rejected' || acc.status === 'suspended') {
+      alert('Your account is ' + acc.status + '. Contact admin.'); return false;
     }
-    if (acc.expiryDate && Date.now() > acc.expiryDate) {
-      window.ILP_AUTH.showExpired();
-      return false;
-    }
-    return true;
+    var hasUnlimited = acc.status === 'approved' && acc.expiryDate && Date.now() < acc.expiryDate;
+    var hasPoints = (Number(acc.points_balance) || 0) > 0;
+    var freeLeft = 0;
+    try { freeLeft = (window.ILP_WALLET && window.ILP_WALLET.freeRemaining) ? window.ILP_WALLET.freeRemaining(acc) : (Number(acc.free_remaining) || 0); } catch(e) {}
+    if (hasUnlimited || hasPoints || freeLeft > 0) return true;
+    window.ILP_AUTH.showPaymentModal();
+    return false;
   }
 
   window.openBandhkamModule = function () {
@@ -8129,16 +8339,17 @@ ILP_AUTH.submitRegistration = async function () {
         if (typeof busy === 'function') busy(false);
 
         if (data.ok) {
-          // Update local account session
-          const acc = ILP_AUTH.getAccount();
+          // Update local account session immediately
+          const acc = ILP_AUTH.getAccount() || {};
           acc.status = 'approved';
           if (data.planType === 'UNLIMITED') {
-            acc.expiryDate = Date.parse(data.expiryDate);
+            acc.expiryDate = data.expiryDate ? Date.parse(data.expiryDate) : (Date.now() + 30 * 86400000);
             acc.rechargeDate = Date.now();
             acc.plan_type = 'UNLIMITED';
+            acc.points_balance = Number(acc.points_balance) || 0; // keep existing points
           } else if (data.planType === 'POINTS') {
-            acc.points_balance = Number(data.currentPoints) || 0;
-            acc.expiryDate = null;  // points plan has no expiry
+            acc.points_balance = Number(data.currentPoints) || Number(data.points) || 0;
+            acc.expiryDate = null;  // points plan has no calendar expiry
             acc.rechargeDate = Date.now();
             acc.plan_type = 'POINTS';
           }
@@ -8146,19 +8357,48 @@ ILP_AUTH.submitRegistration = async function () {
           
           if (typeof refreshBadge === 'function') refreshBadge();
           ILP_AUTH.hideAll();
-          alert("🎉 Payment Successful! Account updated instantly.");
+          alert("🎉 Payment Successful! Account updated instantly.\n\n" +
+            (data.planType === 'POINTS' ? ('Points balance: ' + (acc.points_balance || 0)) : 'Unlimited plan active.'));
+
+          // Extra safety: re-pull status from cloud after a short delay
+          setTimeout(async () => {
+            try {
+              if (typeof revalidate === 'function') revalidate();
+              else if (typeof ILP_AUTH !== 'undefined' && ILP_AUTH.checkStatus) ILP_AUTH.checkStatus();
+            } catch (_) {}
+          }, 1500);
         } else {
-          alert("Verification pending or failed: " + (data.msg || "Order not paid yet."));
+          alert("Verification pending or failed: " + (data.msg || "Order not paid yet.") +
+            "\n\nIf money was deducted, wait 1-2 minutes and press 'Check Status' or contact admin with your mobile number.");
         }
       } catch (e) {
         if (typeof busy === 'function') busy(false);
-        alert("Payment completed. Click 'Check Status' in your dashboard if balance doesn't refresh automatically.");
+        alert("Payment may have completed. Click 'Check Status' in your dashboard if balance/points don't refresh automatically.\n\n" + (e.message || ''));
       }
     }
   };
 
-  /* ------------------- Centralized Wallet Rules ------------------- */
+  /* ------------------- Centralized Wallet Rules + Free Trial ------------------- */
+  /* Free trial: 3 uses per mobile number (anti-abuse: never resets on re-register).
+     Priority: Unlimited plan → Points → Free trial remaining → Payment modal. */
+  const FREE_TRIAL_LIMIT = 3;
+
   window.ILP_WALLET = {
+    freeRemaining(acc) {
+      if (!acc) return 0;
+      // Once user has ever paid / been approved with points or unlimited, free is gone
+      if (acc.status === 'approved' && (acc.expiryDate || Number(acc.points_balance) > 0 || acc.plan_type === 'POINTS' || acc.plan_type === 'UNLIMITED')) {
+        return 0;
+      }
+      const fr = acc.free_remaining;
+      if (fr === undefined || fr === null) {
+        // First time we see this account locally — give trial once
+        // (cloud should also store free_remaining; never raise above limit)
+        return FREE_TRIAL_LIMIT;
+      }
+      return Math.max(0, Number(fr) || 0);
+    },
+
     // Check if user is eligible to perform an action
     canUse(cost = 1) {
       const acc = ILP_AUTH.getAccount();
@@ -8166,49 +8406,74 @@ ILP_AUTH.submitRegistration = async function () {
       if (adminIn) return true;
       if (!acc) { ILP_AUTH.showRegistration(); return false; }
 
-      // Rule 1: Monthly Unlimited Pass always grants free unlimited access
+      // Rule 1: Monthly Unlimited Pass
       if (acc.status === 'approved' && acc.expiryDate && Date.now() < acc.expiryDate) {
         return true;
       }
 
-      // Rule 2: Point balance validation
+      // Rule 2: Point balance
       const pts = Number(acc.points_balance) || 0;
-      if (pts >= cost) {
-        return true;
-      }
+      if (pts >= cost) return true;
 
-      alert(`Insufficient balance!\n\nThis action requires ${cost} point(s), but your wallet has ${pts} point(s).\nPlease recharge points or get 1 Month Unlimited.`);
+      // Rule 3: Free trial remaining (tied to this mobile — cannot reset by re-registering)
+      const freeLeft = this.freeRemaining(acc);
+      if (freeLeft >= cost) return true;
+
+      // Exhausted
+      const msg = freeLeft > 0
+        ? `This action needs ${cost} use(s). You have only ${freeLeft} free trial left.\nPlease recharge points or buy 1 Month Unlimited.`
+        : `Free trial finished (${FREE_TRIAL_LIMIT} uses).\n\nRecharge points or buy 1 Month Unlimited to continue.`;
+      alert(msg);
       ILP_AUTH.showPaymentModal();
       return false;
     },
 
-    // Deduct points after successful generation/print
+    // Deduct after successful generation/print
     debit(serviceName, cost = 1) {
       const acc = ILP_AUTH.getAccount();
       const adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
       if (adminIn || !acc) return;
 
-      // Do NOT deduct if user has an active unlimited monthly pass
+      // Unlimited → no deduction
       if (acc.status === 'approved' && acc.expiryDate && Date.now() < acc.expiryDate) {
         return;
       }
 
-      const pts = Number(acc.points_balance) || 0;
-      const updatedBalance = Math.max(0, pts - cost);
-      acc.points_balance = updatedBalance;
+      let pts = Number(acc.points_balance) || 0;
+      let freeLeft = this.freeRemaining(acc);
+
+      // Prefer spending points first, then free trial
+      if (pts >= cost) {
+        pts = Math.max(0, pts - cost);
+        acc.points_balance = pts;
+      } else if (freeLeft >= cost) {
+        freeLeft = Math.max(0, freeLeft - cost);
+        acc.free_remaining = freeLeft;
+        // Persist that trial was granted/used so re-register cannot reset
+        acc.free_trial_granted = true;
+      } else {
+        // Should not reach here if canUse was called, but safety:
+        acc.free_remaining = 0;
+        acc.free_trial_granted = true;
+      }
+
       localStorage.setItem('iloveprint_account', JSON.stringify(acc));
 
       const ptBadge = document.getElementById('ilpUserPointsBadge');
-      if (ptBadge) ptBadge.textContent = updatedBalance + ' Pts';
+      if (ptBadge) {
+        const free = this.freeRemaining(acc);
+        ptBadge.textContent = (Number(acc.points_balance) || 0) + ' Pts' + (free > 0 ? ' · ' + free + ' Free' : '');
+      }
 
-      // Sync deduction with Google Sheet backend
-      const cloudUrl = window.ILP_SETTINGS ? window.ILP_SETTINGS.sheetUrl() : GOOGLE_SHEET_API_URL;
+      // Sync with Google Sheet
+      const cloudUrl = window.ILP_SETTINGS ? window.ILP_SETTINGS.sheetUrl() : (typeof GOOGLE_SHEET_API_URL !== 'undefined' ? GOOGLE_SHEET_API_URL : '');
       if (cloudUrl) {
         fetch(cloudUrl + (cloudUrl.includes('?') ? '&' : '?') + new URLSearchParams({
           action: 'debit_points',
           mobile: acc.mobile,
           cost: cost,
-          balance: updatedBalance,
+          balance: Number(acc.points_balance) || 0,
+          free_remaining: Number(acc.free_remaining) || 0,
           service: serviceName
         })).catch(() => {});
       }
@@ -8217,20 +8482,114 @@ ILP_AUTH.submitRegistration = async function () {
 
   window.ILP_CASHFREE = ILP_CASHFREE;
 
-  // Update Points Badge on refresh
+  // Update Points / Free Trial Badge on refresh
   const origRefreshBadge = window.refreshBadge;
   window.refreshBadge = function () {
     if (origRefreshBadge) origRefreshBadge.apply(this, arguments);
     const acc = ILP_AUTH.getAccount();
     const ptBadge = document.getElementById('ilpUserPointsBadge');
     if (ptBadge && acc) {
-      ptBadge.textContent = (acc.points_balance || 0) + ' Pts';
+      const pts = Number(acc.points_balance) || 0;
+      let free = 0;
+      try { free = (window.ILP_WALLET && window.ILP_WALLET.freeRemaining) ? window.ILP_WALLET.freeRemaining(acc) : (Number(acc.free_remaining) || 0); } catch(e) {}
+      ptBadge.textContent = pts + ' Pts' + (free > 0 ? ' · ' + free + ' Free' : '');
     }
   };
 
 })();
 </script>
 
+
+
+<!-- ============================================================
+     iLovePrint ADD-ON — One-Click ID Card Maker Suite
+     Debits 1 point on each Print / Combined PDF / Combined PNG
+     ============================================================ -->
+<script>
+(function () {
+  'use strict';
+
+  const OCC_PATH   = 'one-click-card.html';
+  const SECTION_ID = 'oneClickCardSection';
+  const FRAME_ID   = 'oneClickCardFrame';
+  const OTHER_SECTIONS = [
+    'landingSection','smartIdSection','passportSection',
+    'bgaiSection','cropperSection','jointSection','bandhkamSection','dynamicModuleSection'
+  ];
+
+  function hideOthers() {
+    OTHER_SECTIONS.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+  }
+
+  function requireAuth() {
+    var acc     = JSON.parse(localStorage.getItem('iloveprint_account') || 'null');
+    var adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
+    if (adminIn) return true;
+    if (!acc) { window.ILP_AUTH.showRegistration(); return false; }
+    if (acc.status === 'pending_approval') { window.ILP_AUTH.showPending(); return false; }
+    if (acc.status === 'rejected' || acc.status === 'suspended') {
+      alert('Your account is ' + acc.status + '. Contact admin.'); return false;
+    }
+    var hasUnlimited = acc.status === 'approved' && acc.expiryDate && Date.now() < acc.expiryDate;
+    var hasPoints = (Number(acc.points_balance) || 0) > 0;
+    var freeLeft = 0;
+    try { freeLeft = (window.ILP_WALLET && window.ILP_WALLET.freeRemaining) ? window.ILP_WALLET.freeRemaining(acc) : (Number(acc.free_remaining) || 0); } catch(e) {}
+    if (hasUnlimited || hasPoints || freeLeft > 0) return true;
+    window.ILP_AUTH.showPaymentModal();
+    return false;
+  }
+
+  window.openOneClickCardModule = function () {
+    if (!requireAuth()) return;
+    // Check at least 1 point available (unlimited pass also OK)
+    if (window.ILP_WALLET && !window.ILP_WALLET.canUse(1)) return;
+
+    hideOthers();
+
+    var tg = document.getElementById('topGuideBar');
+    if (tg) tg.style.display = 'none';
+    var hb = document.getElementById('topHubReturnBtn');
+    if (hb) hb.style.display = 'inline-flex';
+
+    var iframe = document.getElementById(FRAME_ID);
+    if (iframe && !iframe.dataset.loaded) {
+      iframe.src = OCC_PATH;
+      iframe.dataset.loaded = '1';
+    }
+
+    var sec = document.getElementById(SECTION_ID);
+    if (sec) sec.style.display = 'block';
+    document.body.className = 'mode-oneclick';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Debit 1 point when child reports a print/export
+  window.addEventListener('message', function (ev) {
+    if (!ev.data || ev.data.type !== 'ilp-one-click-card-print') return;
+    if (window.ILP_WALLET) {
+      window.ILP_WALLET.debit('One-Click ID Card', 1);
+    }
+  });
+
+  // Integrate with switchSuiteSection
+  var _origSwitch = window.switchSuiteSection;
+  window.switchSuiteSection = function (mode) {
+    var sec = document.getElementById(SECTION_ID);
+    if (sec) sec.style.display = 'none';
+    if (mode === 'oneclick' || mode === 'one-click-card') {
+      window.openOneClickCardModule();
+      return;
+    }
+    return _origSwitch.apply(this, arguments);
+  };
+
+  console.log('[iLovePrint] One-Click ID Card Maker module ready.');
+})();
+</script>
+<!-- ============ END One-Click Card ADD-ON ============ -->
 
 </body>
 </html>
