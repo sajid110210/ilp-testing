@@ -1,0 +1,1503 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ID Card Maker Suite</title>
+<style>
+/* ============================================================
+   LANDING PAGE STYLES
+   ============================================================ */
+:root {
+  --bg: #0d1117; --panel: #161b23; --panel2: #1c232e; --line: #2a323d;
+  --text: #e7ecf3; --muted: #8b97a8; --accent: #4f8cff; --accent2: #22c55e;
+  --danger: #ef4444; --radius: 14px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: radial-gradient(1200px 600px at 50% -10%, #1a2333 0%, var(--bg) 60%);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+  min-height: 100vh;
+}
+h1, h2, h3, h4 { margin: 0; font-weight: 650; letter-spacing: -.01em; }
+
+.hidden { display: none !important; }
+
+/* Landing Page Container */
+#landingPage {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh; padding: 40px 20px;
+}
+.logo-icon {
+  width: 64px; height: 64px; border-radius: 16px; 
+  background: linear-gradient(135deg, #4f8cff, #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px; box-shadow: 0 8px 24px rgba(79,140,255,0.3);
+}
+.logo-icon svg { width: 32px; height: 32px; fill: #fff; }
+.main-title { font-size: 32px; font-weight: 800; margin-bottom: 12px; text-align: center; }
+.main-title span {
+  background: linear-gradient(90deg, #818cf8, #c084fc);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.subtitle { color: var(--muted); font-size: 15px; margin-bottom: 32px; text-align: center; }
+
+/* Search Bar */
+.search-container {
+  position: relative; width: 100%; max-width: 500px; margin-bottom: 40px;
+}
+.search-container svg {
+  position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+  width: 18px; height: 18px; fill: var(--muted);
+}
+#searchInput {
+  width: 100%; background: var(--panel); border: 1px solid var(--line);
+  color: var(--text); border-radius: 10px; padding: 14px 16px 14px 48px;
+  font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.2s;
+}
+#searchInput:focus { border-color: var(--accent); }
+
+/* Grid */
+.grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+  max-width: 1200px; width: 100%;
+}
+@media (max-width: 1024px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 600px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* Cards */
+.card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 16px; display: flex; align-items: flex-start; gap: 14px;
+  cursor: pointer; transition: all 0.2s ease; text-align: left;
+}
+.card:hover {
+  transform: translateY(-4px); border-color: var(--accent);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.card-icon {
+  width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: #fff;
+}
+.card-content { display: flex; flex-direction: column; gap: 4px; }
+.card-title { font-size: 14px; font-weight: 700; line-height: 1.2; }
+.card-desc { font-size: 11.5px; color: var(--muted); line-height: 1.3; }
+
+/* ============================================================
+   TOOL PAGE STYLES
+   ============================================================ */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 18px 26px; border-bottom: 1px solid var(--line);
+  background: rgba(13,17,23,.75); backdrop-filter: blur(10px);
+  position: sticky; top: 0; z-index: 50;
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo {
+  width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+  background: linear-gradient(135deg, #4f8cff, #8b5cf6); color: #fff; font-weight: 800; font-size: 15px;
+  box-shadow: 0 8px 24px rgba(79,140,255,.35);
+}
+.brand h1 { font-size: 16px; }
+.brand p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+.badge {
+  font-size: 11px; padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--muted); background: var(--panel);
+  white-space: nowrap;
+}
+.back-btn {
+  background: transparent; border: 1px solid var(--line); color: var(--muted);
+  padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;
+  font-size: 13px; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+  white-space: nowrap; /* Prevents text from wrapping to two lines */
+}
+.back-btn:hover { background: var(--panel); color: var(--text); border-color: #3a4553; }
+
+main.tool-main { max-width: 1180px; margin: 0 auto; padding: 28px 22px 70px; }
+
+.status {
+  margin-bottom: 16px; font-size: 13px; padding: 10px 14px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+  display: none;
+}
+.status.show { display: block; }
+.status.err { color: #ffb4b4; border-color: #5a2626; background: #2a1414; }
+.status.ok { color: #a7f3c8; border-color: #1e4a33; background: #0f241a; }
+
+/* Dropzone */
+.dropzone {
+  border: 2px dashed var(--line); border-radius: 22px; background: var(--panel);
+  padding: 64px 28px; text-align: center; transition: .2s; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.dropzone:hover, .dropzone.drag { border-color: var(--accent); background: #182233; }
+.dz-icon {
+  width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center;
+  background: var(--panel2); border: 1px solid var(--line); font-size: 26px; margin-bottom: 6px;
+}
+.dropzone h2 { font-size: 19px; }
+.dropzone p { margin: 0; color: var(--muted); font-size: 13.5px; }
+
+.btn {
+  appearance: none; border: 1px solid var(--line); background: var(--panel2); color: var(--text);
+  padding: 10px 16px; border-radius: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  transition: .15s; display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+  font-family: inherit;
+}
+.btn:hover { background: #232c39; border-color: #3a4553; }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: linear-gradient(135deg, #4f8cff, #3b6fe0); border-color: #4f8cff; color: #fff; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.green { background: linear-gradient(135deg, #22c55e, #16a34a); border-color: #22c55e; color: #fff; }
+.btn.ghost { background: transparent; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media(max-width: 760px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--line);
+  font-size: 11.5px; font-weight: 700; letter-spacing: .10em; color: var(--muted);
+  text-transform: uppercase;
+}
+.panel-head .dims { color: var(--accent); letter-spacing: 0; text-transform: none; font-weight: 600; }
+.canvas-wrap {
+  padding: 18px; display: grid; place-items: center; min-height: 180px; max-height: 280px;
+  background: linear-gradient(45deg, #11161e 25%, transparent 25%, transparent 75%, #11161e 75%),
+              linear-gradient(45deg, #11161e 25%, #0f141b 25%, #0f141b 75%, #11161e 75%);
+  background-size: 18px 18px; background-position: 0 0, 9px 9px; position: relative;
+}
+
+.preview-container { position: relative; display: inline-block; max-width: 100%; max-height: 230px; user-select: none; }
+.preview-container img {
+  display: block; max-width: 100%; max-height: 230px; width: auto; height: auto; object-fit: contain;
+  border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,.5); background: #fff; pointer-events: none;
+}
+.preview-container.custom-active { cursor: grab; }
+.preview-container.custom-active:active { cursor: grabbing; }
+
+.photo-box {
+  position: absolute; border: 1px dashed rgba(239,68,68,0.9); background: transparent;
+  cursor: crosshair; display: none; box-sizing: border-box; box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
+}
+.photo-box.active { display: block; }
+.sig-box {
+  position: absolute; border: 1px dashed rgba(34,197,94,0.9); background: transparent;
+  cursor: crosshair; display: none; box-sizing: border-box; box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
+}
+.sig-box.active { display: block; }
+
+.panel-foot { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; }
+.panel-foot .btn { flex: 1; min-width: 120px; }
+
+.slider-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 140px; }
+.slider-header { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); font-weight: 600; }
+input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 6px; border-radius: 3px; outline: none; }
+
+.layout-panel {
+  margin-top: 18px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 18px;
+}
+.layout-panel h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 14px; }
+
+.layout-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.layout-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 18px 14px; border-radius: 12px; cursor: pointer; border: 1px solid var(--line);
+  background: var(--panel2); color: var(--muted); transition: all .2s ease; font-family: inherit; text-align: center; gap: 6px;
+}
+.layout-card:hover { background: #232c39; color: var(--text); border-color: #3a4553; transform: translateY(-2px); }
+.layout-card.active {
+  background: linear-gradient(145deg, rgba(79,140,255,0.15) 0%, rgba(139,92,246,0.1) 100%);
+  border-color: var(--accent); color: #fff; box-shadow: 0 4px 20px rgba(79,140,255,0.15); transform: translateY(-2px);
+}
+.layout-card .icon { font-size: 28px; margin-bottom: 4px; }
+.layout-card .title { font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
+.layout-card .desc { font-size: 11px; opacity: 0.8; }
+
+.opts { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; align-items: stretch; }
+.opts-row { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; }
+.opts-row.margins { border-top: 1px solid var(--line); padding-top: 12px; }
+.opts label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.opts input[type=number], .opts select {
+  background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 8px; padding: 7px 10px; font-size: 13px; font-family: inherit; outline: none;
+}
+.opts input[type=number] { width: 60px; }
+.opts input[type=number]:focus, .opts select:focus { border-color: var(--accent); }
+.opts .chk { cursor: pointer; user-select: none; }
+.opts input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; }
+.margin-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+.enhance-toggle {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3);
+  padding: 6px 12px; border-radius: 8px; color: #a7f3c8; font-weight: 600; font-size: 12.5px; transition: .2s;
+}
+.enhance-toggle:hover { background: rgba(34, 197, 94, 0.2); }
+.enhance-toggle input { display: none; }
+.enhance-toggle.active { background: rgba(34, 197, 94, 0.25); border-color: #22c55e; color: #fff; }
+
+.sheet-wrap {
+  display: flex; gap: 22px; flex-wrap: wrap; justify-content: center;
+  padding: 18px; border-radius: 12px; border: 1px solid var(--line); background: #0a0e14;
+}
+.sheet-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.sheet-item img { max-width: 100%; max-height: 380px; background: #fff; border-radius: 4px; box-shadow: 0 14px 40px rgba(0,0,0,.6); }
+.sheet-item span { font-size: 11px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+.actions .btn { flex: 1; min-width: 150px; padding: 13px 16px; }
+
+/* Modal */
+.modal {
+  position: fixed; inset: 0; background: rgba(4,7,12,.72); backdrop-filter: blur(6px);
+  display: grid; place-items: center; z-index: 200; padding: 20px;
+}
+.modal-card {
+  width: 100%; max-width: 400px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 18px; padding: 26px; box-shadow: 0 30px 80px rgba(0,0,0,.7);
+}
+.modal-card h3 { font-size: 17px; margin-bottom: 6px; }
+.modal-card p { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
+.modal-card input {
+  width: 100%; background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 10px; padding: 12px 14px; font-size: 14px; outline: none; font-family: inherit;
+}
+.modal-card input:focus { border-color: var(--accent); }
+.modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+.modal-actions .btn { flex: 1; }
+
+#printArea { display: none; }
+.print-page { display: block; }
+@media print {
+  html, body { background: #fff !important; margin: 0; padding: 0; }
+  #landingPage, #toolPage { display: none !important; }
+  #printArea { display: block !important; }
+  .print-page { display: block; page-break-after: always; break-after: page; }
+  .print-page:last-child { page-break-after: auto; break-after: auto; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ================= LANDING PAGE ================= -->
+<div id="landingPage">
+  <div class="logo-icon">
+    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h2v2H6zm0 4h8v2H6zm10-4h2v2h-2zm0 4h2v2h-2z"/></svg>
+  </div>
+  <h1 class="main-title">ID Card <span>Maker Suite</span></h1>
+  <p class="subtitle">Select a program below to crop, enhance, and print your ID cards perfectly.</p>
+
+  <div class="search-container">
+    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    <input type="text" id="searchInput" placeholder="Search for a card...">
+  </div>
+
+  <div class="grid" id="toolGrid">
+    <!-- Cards injected by JS -->
+  </div>
+</div>
+
+<!-- ================= TOOL PAGE ================= -->
+<div id="toolPage" class="hidden">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" id="toolLogo">IN</div>
+      <div>
+        <h1 id="toolTitle">Aadhar Card Auto Cropper</h1>
+        <p>PDF → Front &amp; Back → A4 · 4×6 (rotated back) · PVC</p>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <div class="badge" id="toolBadge">Aadhar Calibration · v3</div>
+      <button class="back-btn" id="backToSuiteBtn">← Back to Suite</button>
+    </div>
+  </header>
+
+  <main class="tool-main">
+    <!-- DROP ZONE -->
+    <section id="dropZone" class="dropzone">
+      <input type="file" id="fileInput" accept="application/pdf,.pdf" hidden>
+      <div class="dz-icon">⬆</div>
+      <h2 id="dropzoneTitle">Drop your PDF here</h2>
+      <p>or click to browse &nbsp;·&nbsp; password-protected PDFs supported</p>
+      <button class="btn primary" id="browseBtn" style="margin-top:14px">Choose PDF</button>
+    </section>
+
+    <!-- WORKSPACE -->
+    <section id="workspace" class="workspace hidden">
+      <div class="status" id="status"></div>
+
+      <div class="grid-2">
+        <!-- FRONT PANEL -->
+        <div class="panel">
+          <div class="panel-head">
+            <span>Front</span>
+            <label class="enhance-toggle active" id="enhanceToggle">
+              <input type="checkbox" id="enhanceChk" checked>
+              ✨ Auto-Enhance
+            </label>
+          </div>
+          <div class="canvas-wrap">
+            <div class="preview-container" id="frontPreviewContainer">
+              <img id="frontPreview" alt="Front card">
+              <div class="photo-box" id="photoBox"></div>
+              <div class="sig-box" id="sigBox"></div>
+            </div>
+          </div>
+          
+          <div style="padding: 12px 16px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px;">
+             <!-- Photo Box Controls -->
+             <div class="opts-row" style="align-items: flex-end;">
+               <span class="margin-label" style="width:100%; margin-bottom: -4px; color: var(--danger);">Main Photo Box (%):</span>
+               <label>X <input type="number" id="pX" value="9.8" min="0" max="100" step="0.1"></label>
+               <label>Y <input type="number" id="pY" value="22.2" min="0" max="100" step="0.1"></label>
+               <label>W <input type="number" id="pW" value="20.3" min="1" max="100" step="0.1"></label>
+               <label>H <input type="number" id="pH" value="38.5" min="1" max="100" step="0.1"></label>
+             </div>
+             
+             <!-- Signature Box Controls (Hidden by default) -->
+             <div class="opts-row sig-controls" style="align-items: flex-end; border-top: 1px solid var(--line); padding-top: 8px; display: none;">
+               <span class="margin-label" style="width:100%; margin-bottom: -4px; color: var(--accent2);">Signature Box (%):</span>
+               <label>X <input type="number" id="sX" value="24.4" min="0" max="100" step="0.1"></label>
+               <label>Y <input type="number" id="sY" value="85.7" min="0" max="100" step="0.1"></label>
+               <label>W <input type="number" id="sW" value="29.5" min="1" max="100" step="0.1"></label>
+               <label>H <input type="number" id="sH" value="10.4" min="1" max="100" step="0.1"></label>
+             </div>
+
+             <!-- Small Photo Box Controls (Hidden by default) -->
+             <div class="opts-row small-photo-controls" style="align-items: flex-end; border-top: 1px solid var(--line); padding-top: 8px; display: none;">
+               <span class="margin-label" style="width:100%; margin-bottom: -4px; color: #ffb4b4;">Small Photo Box (%):</span>
+               <label>X <input type="number" id="spX" value="85.1" min="0" max="100" step="0.1"></label>
+               <label>Y <input type="number" id="spY" value="26.7" min="0" max="100" step="0.1"></label>
+               <label>W <input type="number" id="spW" value="7.7" min="1" max="100" step="0.1"></label>
+               <label>H <input type="number" id="spH" value="16.1" min="1" max="100" step="0.1"></label>
+             </div>
+             
+             <!-- Sliders -->
+             <div class="opts-row" style="border-top: 1px solid var(--line); padding-top: 12px; align-items: flex-start;">
+               <div class="slider-group">
+                 <div class="slider-header"><span>Brightness</span><span id="brightnessVal">100%</span></div>
+                 <input type="range" id="brightnessSlider" min="50" max="200" value="100">
+               </div>
+               <div class="slider-group">
+                 <div class="slider-header"><span>Contrast</span><span id="contrastVal">100%</span></div>
+                 <input type="range" id="contrastSlider" min="50" max="200" value="100">
+               </div>
+               <button class="btn" id="btnResetAdjust" style="padding: 6px 12px; font-size: 11.5px; height: 30px; margin-top: 14px;">Reset</button>
+             </div>
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="panel-foot" style="border-bottom: 1px solid var(--line);">
+            <button class="btn" id="btnReplacePhoto" style="background: rgba(79,140,255,0.1); border-color: rgba(79,140,255,0.3); color: #a7c4ff;">🖼️ Replace Photo</button>
+            <button class="btn" id="btnResetPhoto" style="display: none;">↺ Reset Photo</button>
+            
+            <button class="btn sig-controls" id="btnReplaceSig" style="display: none; background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.3); color: #a7f3c8;">✍️ Replace Signature</button>
+            <button class="btn sig-controls" id="btnResetSig" style="display: none;">↺ Reset Sig</button>
+
+            <button class="btn small-photo-controls" id="btnReplaceSmallPhoto" style="display: none; background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #ffb4b4;">🔲 Replace Small B&W</button>
+            <button class="btn small-photo-controls" id="btnResetSmallPhoto" style="display: none;">↺ Reset Small</button>
+
+            <button class="btn" id="dlFront">⬇ Front PNG</button>
+          </div>
+          
+          <input type="file" id="customPhotoInput" accept="image/*" hidden>
+          <input type="file" id="customSigInput" accept="image/*" hidden>
+          <input type="file" id="customSmallPhotoInput" accept="image/*" hidden>
+
+          <!-- Transform Controls -->
+          <div id="photoAdjustControls" style="display: none; padding: 12px 16px; border-top: 1px solid var(--line); flex-direction: column; gap: 8px;">
+            <div class="slider-header"><span>Photo Zoom</span><span id="photoZoomVal">100%</span></div>
+            <input type="range" id="photoZoomSlider" min="10" max="300" value="100">
+            <button class="btn" id="btnResetTransform" style="padding: 6px; font-size: 11.5px;">Reset Position</button>
+            <p class="muted small" style="margin-top: 4px; text-align: center; font-size: 11px; color: var(--muted);">Drag directly to adjust.</p>
+          </div>
+
+          <div id="sigAdjustControls" style="display: none; padding: 12px 16px; border-top: 1px solid var(--line); flex-direction: column; gap: 8px; background: rgba(34,197,94,0.05);">
+            <div class="opts-row" style="border-bottom: 1px solid rgba(34,197,94,0.2); padding-bottom: 8px; margin-bottom: 4px;">
+               <div class="slider-group" style="min-width: 100px;">
+                 <div class="slider-header"><span>Sig Brightness</span><span id="sigBrightnessVal">100%</span></div>
+                 <input type="range" id="sigBrightnessSlider" min="50" max="200" value="100">
+               </div>
+               <div class="slider-group" style="min-width: 100px;">
+                 <div class="slider-header"><span>Sig Contrast</span><span id="sigContrastVal">100%</span></div>
+                 <input type="range" id="sigContrastSlider" min="50" max="200" value="100">
+               </div>
+            </div>
+            <div class="slider-header"><span>Signature Zoom</span><span id="sigZoomVal">100%</span></div>
+            <input type="range" id="sigZoomSlider" min="10" max="300" value="100">
+            <button class="btn" id="btnResetSigTransform" style="padding: 6px; font-size: 11.5px;">Reset Position</button>
+            <p class="muted small" style="margin-top: 4px; text-align: center; font-size: 11px; color: var(--muted);">Drag directly to adjust.</p>
+          </div>
+
+          <div id="smallPhotoAdjustControls" style="display: none; padding: 12px 16px; border-top: 1px solid var(--line); flex-direction: column; gap: 8px; background: rgba(239,68,68,0.05);">
+            <div class="slider-header"><span>Small Photo Zoom</span><span id="smallPhotoZoomVal">100%</span></div>
+            <input type="range" id="smallPhotoZoomSlider" min="10" max="300" value="100">
+            <button class="btn" id="btnResetSmallTransform" style="padding: 6px; font-size: 11.5px;">Reset Position</button>
+            <p class="muted small" style="margin-top: 4px; text-align: center; font-size: 11px; color: var(--muted);">Drag directly to adjust.</p>
+          </div>
+
+        </div>
+        
+        <!-- BACK PANEL -->
+        <div class="panel">
+          <div class="panel-head"><span>Back</span><span class="dims">88 × 58 mm</span></div>
+          <div class="canvas-wrap">
+             <div class="preview-container">
+               <img id="backPreview" alt="Back card">
+             </div>
+          </div>
+          <div class="panel-foot" style="border-top: none; padding-top: 100px;"><button class="btn" id="dlBack">⬇ Back PNG</button></div>
+        </div>
+      </div>
+
+      <div class="layout-panel">
+        <h3>Print setup</h3>
+
+        <div class="layout-cards" id="layoutSeg">
+          <button class="layout-card active" data-layout="A4">
+            <span class="icon">📄</span>
+            <span class="title">A4 Sheet</span>
+            <span class="desc">210 × 297 mm</span>
+          </button>
+          <button class="layout-card" data-layout="4x6">
+            <span class="icon">🖼️</span>
+            <span class="title">4×6 Photo</span>
+            <span class="desc">Back Rotated</span>
+          </button>
+          <button class="layout-card" data-layout="PVC">
+            <span class="icon">💳</span>
+            <span class="title">PVC Card</span>
+            <span class="desc">CR80 · Front &amp; Back</span>
+          </button>
+        </div>
+
+        <div class="opts">
+          <div class="opts-row">
+            <label>Fold gap <input type="number" id="gapInput" value="1" min="0" max="20" step="0.5"> mm</label>
+            <label>DPI
+              <select id="dpiSelect">
+                <option value="300" selected>300</option>
+                <option value="600">600</option>
+              </select>
+            </label>
+            <label>Fit
+              <select id="fitSelect">
+                <option value="stretch" selected>Stretch (exact 88×58)</option>
+                <option value="fit">Fit (no distortion)</option>
+              </select>
+            </label>
+            <label class="chk"><input type="checkbox" id="guideChk"> Fold &amp; crop guides</label>
+          </div>
+          <div class="opts-row margins">
+            <span class="margin-label">Page Margins (mm):</span>
+            <label>Top <input type="number" id="mTop" value="5" min="0" max="50" step="0.5"></label>
+            <label>Bottom <input type="number" id="mBottom" value="5" min="0" max="50" step="0.5"></label>
+            <label>Left <input type="number" id="mLeft" value="5" min="0" max="50" step="0.5"></label>
+            <label>Right <input type="number" id="mRight" value="5" min="0" max="50" step="0.5"></label>
+          </div>
+        </div>
+
+        <div class="sheet-wrap" id="sheetPreview"></div>
+
+        <div class="actions">
+          <button class="btn primary" id="btnPrint">🖨 Print</button>
+          <button class="btn" id="btnCombinedPng">⬇ Combined PNG</button>
+          <button class="btn green" id="btnCombinedPdf">⬇ Combined PDF</button>
+          <button class="btn ghost" id="btnReset">＋ New PDF</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- PASSWORD MODAL -->
+<div class="modal hidden" id="pwdModal">
+  <div class="modal-card">
+    <h3>🔒 Password required</h3>
+    <p id="pwdMsg">This PDF is encrypted. Enter the password to continue.</p>
+    <input type="password" id="pwdInput" placeholder="PDF password" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn ghost" id="pwdCancel">Cancel</button>
+      <button class="btn primary" id="pwdOk">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<div id="printArea"></div>
+<style id="printStyle"></style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+(() => {
+'use strict';
+
+/* ============================================================
+   CONFIGURATIONS
+   ============================================================ */
+const TOOLS = {
+  aadhar: {
+    name: 'Aadhar Card', id: 'aadhar', icon: 'IN', color: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+    desc: 'Aadhar Front & Back Cropper',
+    cal: { page: { w: 1224, h: 1584 }, front: { x: 95, y: 1144, width: 511, height: 326 }, back: { x: 619, y: 1144, width: 512, height: 327 } },
+    hasSig: false, hasSmall: false, multiPage: false,
+    photoBox: { x: 9.8, y: 22.2, w: 20.3, h: 38.5 }
+  },
+  abha: {
+    name: 'ABHA Card', id: 'abha', icon: '❤️', color: 'linear-gradient(135deg, #ec4899, #be185d)',
+    desc: 'ABHA Health ID Cropper',
+    cal: { page: { w: 930, h: 1152 }, front: { x: 20, y: 20, width: 893, height: 550 }, back: { x: 20, y: 587, width: 893, height: 549 } },
+    hasSig: false, hasSmall: false, multiPage: false,
+    photoBox: { x: 4.9, y: 30.7, w: 14.9, h: 30.5 }
+  },
+  ayushman: {
+    name: 'Ayushman Card', id: 'ayushman', icon: '🏥', color: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+    desc: 'Ayushman Bharat Cropper',
+    cal: { page: { w: 1700, h: 600 }, front: { x: 210, y: 187, width: 612, height: 309 }, back: { x: 887, y: 187, width: 617, height: 309 } },
+    hasSig: false, hasSmall: false, multiPage: false,
+    photoBox: { x: 2.7, y: 30.0, w: 16.5, h: 35.8 }
+  },
+  eshram: {
+    name: 'ESHRAM Card', id: 'eshram', icon: '👨‍💼', color: 'linear-gradient(135deg, #f59e0b, #d97706)',
+    desc: 'e-Shram Card Cropper',
+    cal: { page: { w: 1200, h: 1600 }, front: { x: 269, y: 118, width: 598, height: 385 }, back: { x: 268, y: 508, width: 603, height: 385 } },
+    hasSig: false, hasSmall: false, multiPage: false,
+    photoBox: { x: 3.5, y: 28.3, w: 17.7, h: 35.0 }
+  },
+  instant_pan: {
+    name: 'Instant PAN', id: 'instant_pan', icon: '⚡', color: 'linear-gradient(135deg, #a855f7, #7e22ce)',
+    desc: 'Instant e-filling PAN Card',
+    cal: { page: { w: 1190, h: 1684 }, front: { x: 78, y: 1255, width: 495, height: 317 }, back: { x: 614, y: 1261, width: 499, height: 307 } },
+    hasSig: true, hasSmall: false, multiPage: false,
+    photoBox: { x: 1.8, y: 18.8, w: 16.4, h: 31.8 },
+    sigBox: { x: 24.4, y: 85.7, w: 29.5, h: 10.4 }
+  },
+  maha_id: {
+    name: 'MAHA ID', id: 'maha_id', icon: '🪷', color: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+    desc: 'MahaSarthi Card Cropper',
+    cal: { page: { w: 1190, h: 1684 }, front: { x: 66, y: 37, width: 640, height: 406 }, back: { x: 65, y: 518, width: 639, height: 405 } },
+    hasSig: false, hasSmall: false, multiPage: false,
+    photoBox: { x: 5, y: 26, w: 22, h: 38 }
+  },
+  nsdl_pan: {
+    name: 'NSDL PAN', id: 'nsdl_pan', icon: '🆔', color: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+    desc: 'NSDL PAN Card Cropper',
+    cal: { page: { w: 1190, h: 1684 }, front: { x: 145, y: 1310, width: 454, height: 281 }, back: { x: 621, y: 1309, width: 456, height: 278 } },
+    hasSig: true, hasSmall: false, multiPage: false,
+    photoBox: { x: 2.8, y: 24.0, w: 18.1, h: 30.9 },
+    sigBox: { x: 31.0, y: 84.9, w: 30.1, h: 9.6 }
+  },
+  ration: {
+    name: 'Ration Card', id: 'ration', icon: '🛒', color: 'linear-gradient(135deg, #ec4899, #be185d)',
+    desc: 'Ration Card with Multi-Page',
+    cal: { page: { w: 1224, h: 1584 }, front: { x: 94, y: 442, width: 1040, height: 764, page: 1 }, back: { x: 91, y: 131, width: 1046, height: 557, page: 2 } },
+    hasSig: false, hasSmall: false, multiPage: true,
+    photoBox: { x: 5.7, y: 36.4, w: 13.4, h: 21.2 }
+  },
+  uti_pan: {
+    name: 'UTI PAN', id: 'uti_pan', icon: '🆔', color: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+    desc: 'UTI PAN Card Cropper',
+    cal: { page: { w: 1190, h: 1684 }, front: { x: 73, y: 1318, width: 489, height: 305 }, back: { x: 630, y: 1318, width: 489, height: 306 } },
+    hasSig: true, hasSmall: false, multiPage: false,
+    photoBox: { x: 4.3, y: 25.7, w: 16.6, h: 26.2 },
+    sigBox: { x: 36.0, y: 79.7, w: 24.9, h: 14.1 }
+  },
+  voter: {
+    name: 'Voter ID', id: 'voter', icon: '📄', color: 'linear-gradient(135deg, #6b7280, #4b5563)',
+    desc: 'Voter ID with B&W Small Photo',
+    cal: { page: { w: 4626, h: 6548 }, front: { x: 239, y: 738, width: 1937, height: 1221 }, back: { x: 2528, y: 731, width: 1937, height: 1221 } },
+    hasSig: false, hasSmall: true, multiPage: false,
+    photoBox: { x: 4.1, y: 37.5, w: 24.7, h: 51.6 },
+    smallBox: { x: 85.1, y: 26.7, w: 7.7, h: 16.1 }
+  }
+};
+
+/* ============================================================
+   DOM
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const els = {
+  landingPage: $('landingPage'), toolPage: $('toolPage'), toolGrid: $('toolGrid'),
+  toolLogo: $('toolLogo'), toolTitle: $('toolTitle'), toolBadge: $('toolBadge'),
+  backToSuiteBtn: $('backToSuiteBtn'),
+  dropZone: $('dropZone'), fileInput: $('fileInput'), browseBtn: $('browseBtn'),
+  dropzoneTitle: $('dropzoneTitle'),
+  workspace: $('workspace'), status: $('status'),
+  frontPreview: $('frontPreview'), backPreview: $('backPreview'),
+  frontPreviewContainer: $('frontPreviewContainer'), photoBox: $('photoBox'), sigBox: $('sigBox'),
+  pX: $('pX'), pY: $('pY'), pW: $('pW'), pH: $('pH'),
+  sX: $('sX'), sY: $('sY'), sW: $('sW'), sH: $('sH'),
+  spX: $('spX'), spY: $('spY'), spW: $('spW'), spH: $('spH'),
+  brightnessSlider: $('brightnessSlider'), brightnessVal: $('brightnessVal'),
+  contrastSlider: $('contrastSlider'), contrastVal: $('contrastVal'),
+  btnResetAdjust: $('btnResetAdjust'),
+  dlFront: $('dlFront'), dlBack: $('dlBack'),
+  btnReplacePhoto: $('btnReplacePhoto'), btnResetPhoto: $('btnResetPhoto'),
+  btnReplaceSig: $('btnReplaceSig'), btnResetSig: $('btnResetSig'),
+  btnReplaceSmallPhoto: $('btnReplaceSmallPhoto'), btnResetSmallPhoto: $('btnResetSmallPhoto'),
+  customPhotoInput: $('customPhotoInput'), customSigInput: $('customSigInput'), customSmallPhotoInput: $('customSmallPhotoInput'),
+  photoAdjustControls: $('photoAdjustControls'), sigAdjustControls: $('sigAdjustControls'), smallPhotoAdjustControls: $('smallPhotoAdjustControls'),
+  photoZoomSlider: $('photoZoomSlider'), photoZoomVal: $('photoZoomVal'),
+  sigZoomSlider: $('sigZoomSlider'), sigZoomVal: $('sigZoomVal'),
+  smallPhotoZoomSlider: $('smallPhotoZoomSlider'), smallPhotoZoomVal: $('smallPhotoZoomVal'),
+  sigBrightnessSlider: $('sigBrightnessSlider'), sigBrightnessVal: $('sigBrightnessVal'),
+  sigContrastSlider: $('sigContrastSlider'), sigContrastVal: $('sigContrastVal'),
+  btnResetTransform: $('btnResetTransform'), btnResetSigTransform: $('btnResetSigTransform'), btnResetSmallTransform: $('btnResetSmallTransform'),
+  enhanceToggle: $('enhanceToggle'), enhanceChk: $('enhanceChk'),
+  layoutSeg: $('layoutSeg'), gapInput: $('gapInput'), dpiSelect: $('dpiSelect'),
+  fitSelect: $('fitSelect'), guideChk: $('guideChk'),
+  mTop: $('mTop'), mBottom: $('mBottom'), mLeft: $('mLeft'), mRight: $('mRight'),
+  sheetPreview: $('sheetPreview'),
+  btnPrint: $('btnPrint'), btnCombinedPng: $('btnCombinedPng'),
+  btnCombinedPdf: $('btnCombinedPdf'), btnReset: $('btnReset'),
+  pwdModal: $('pwdModal'), pwdInput: $('pwdInput'), pwdMsg: $('pwdMsg'),
+  pwdOk: $('pwdOk'), pwdCancel: $('pwdCancel'),
+  printArea: $('printArea'), printStyle: $('printStyle')
+};
+
+const state = {
+  currentTool: 'aadhar', config: TOOLS.aadhar,
+  pdfBytes: null, pdfDoc: null, fileName: 'idcard',
+  rawFrontCanvas: null, rawBackCanvas: null,
+  frontCanvas: null, backCanvas: null,
+  layout: 'A4', layoutPages: [], sheetCanvases: [], busy: false
+};
+
+let customPhotoImage = null, customPhotoTransform = { x: 0, y: 0, scale: 1 };
+let customSigImage = null, customSigTransform = { x: 0, y: 0, scale: 1 };
+let customSmallPhotoImage = null, customSmallPhotoTransform = { x: 0, y: 0, scale: 1 };
+
+let isDragging = false, isDraggingPhoto = false, isDraggingSig = false, isDraggingSmallPhoto = false;
+let startX = 0, startY = 0;
+let dragStartX = 0, dragStartY = 0, dragStartTransformX = 0, dragStartTransformY = 0;
+
+/* ============================================================
+   PDF.JS SETUP
+   ============================================================ */
+if (window.pdfjsLib) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+/* ============================================================
+   LANDING PAGE LOGIC
+   ============================================================ */
+function renderLandingPage() {
+  els.toolGrid.innerHTML = '';
+  Object.values(TOOLS).forEach(tool => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.onclick = () => openTool(tool.id);
+    card.innerHTML = `
+      <div class="card-icon" style="background: ${tool.color}">${tool.icon}</div>
+      <div class="card-content">
+        <div class="card-title">${tool.name}</div>
+        <div class="card-desc">${tool.desc}</div>
+      </div>
+    `;
+    els.toolGrid.appendChild(card);
+  });
+}
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  const query = e.target.value.toLowerCase();
+  document.querySelectorAll('.card').forEach(card => {
+    const text = card.textContent.toLowerCase();
+    card.style.display = text.includes(query) ? 'flex' : 'none';
+  });
+});
+
+function openTool(toolId) {
+  state.currentTool = toolId;
+  state.config = TOOLS[toolId];
+  
+  // Update UI
+  els.toolLogo.textContent = state.config.icon;
+  els.toolLogo.style.background = state.config.color;
+  els.toolTitle.textContent = state.config.name + ' Auto Cropper';
+  els.toolBadge.textContent = state.config.name + ' Calibration';
+  els.dropzoneTitle.textContent = 'Drop your ' + state.config.name + ' PDF here';
+
+  // Set initial box values
+  els.pX.value = state.config.photoBox.x;
+  els.pY.value = state.config.photoBox.y;
+  els.pW.value = state.config.photoBox.w;
+  els.pH.value = state.config.photoBox.h;
+  
+  if (state.config.hasSig && state.config.sigBox) {
+    els.sX.value = state.config.sigBox.x;
+    els.sY.value = state.config.sigBox.y;
+    els.sW.value = state.config.sigBox.w;
+    els.sH.value = state.config.sigBox.h;
+  }
+  
+  if (state.config.hasSmall && state.config.smallBox) {
+    els.spX.value = state.config.smallBox.x;
+    els.spY.value = state.config.smallBox.y;
+    els.spW.value = state.config.smallBox.w;
+    els.spH.value = state.config.smallBox.h;
+  }
+
+  // Toggle feature controls
+  document.querySelectorAll('.sig-controls').forEach(el => el.style.display = state.config.hasSig ? '' : 'none');
+  document.querySelectorAll('.small-photo-controls').forEach(el => el.style.display = state.config.hasSmall ? '' : 'none');
+  
+  // Reset state
+  resetState();
+
+  // Swap views
+  els.landingPage.classList.add('hidden');
+  els.toolPage.classList.remove('hidden');
+  window.scrollTo(0, 0);
+}
+
+function closeTool() {
+  // Removed confirm() dialog which blocks execution in some browsers/environments
+  els.toolPage.classList.add('hidden');
+  els.landingPage.classList.remove('hidden');
+  resetState();
+  window.scrollTo(0, 0);
+}
+
+// Attach event listener properly
+els.backToSuiteBtn.addEventListener('click', closeTool);
+
+function resetState() {
+  state.pdfDoc = null; state.pdfBytes = null;
+  state.rawFrontCanvas = null; state.rawBackCanvas = null;
+  state.frontCanvas = null; state.backCanvas = null;
+  state.sheetCanvases = []; state.layoutPages = [];
+  
+  customPhotoImage = null; customPhotoTransform = { x: 0, y: 0, scale: 1 };
+  customSigImage = null; customSigTransform = { x: 0, y: 0, scale: 1 };
+  customSmallPhotoImage = null; customSmallPhotoTransform = { x: 0, y: 0, scale: 1 };
+
+  els.btnResetPhoto.style.display = 'none';
+  els.btnResetSig.style.display = 'none';
+  els.btnResetSmallPhoto.style.display = 'none';
+  els.photoAdjustControls.style.display = 'none';
+  els.sigAdjustControls.style.display = 'none';
+  els.smallPhotoAdjustControls.style.display = 'none';
+  
+  els.frontPreviewContainer.classList.remove('custom-active');
+  els.frontPreview.removeAttribute('src');
+  els.backPreview.removeAttribute('src');
+  els.sheetPreview.innerHTML = '';
+  els.workspace.classList.add('hidden');
+  els.dropZone.classList.remove('hidden');
+  els.fileInput.value = '';
+  setStatus('');
+  
+  // Reset layout to A4
+  state.layout = 'A4';
+  [...els.layoutSeg.children].forEach(b => b.classList.toggle('active', b.dataset.layout === 'A4'));
+}
+
+renderLandingPage();
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function setStatus(msg, type) {
+  els.status.textContent = msg || '';
+  els.status.className = 'status' + (msg ? ' show' : '') + (type ? ' ' + type : '');
+}
+
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 8000);
+}
+
+function canvasToJpegBytes(canvas, quality = 0.92) {
+  const dataURL = canvas.toDataURL('image/jpeg', quality);
+  const b64 = dataURL.split(',')[1];
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+/* ============================================================
+   UI SYNC & TRANSFORMS
+   ============================================================ */
+function updateBoxesUI() {
+  // Photo Box
+  if (els.enhanceChk.checked && !customPhotoImage) {
+    els.photoBox.classList.add('active');
+    els.photoBox.style.left = (parseFloat(els.pX.value)||0) + '%';
+    els.photoBox.style.top = (parseFloat(els.pY.value)||0) + '%';
+    els.photoBox.style.width = (parseFloat(els.pW.value)||1) + '%';
+    els.photoBox.style.height = (parseFloat(els.pH.value)||1) + '%';
+  } else {
+    els.photoBox.classList.remove('active');
+  }
+
+  // Sig Box
+  if (state.config.hasSig && els.enhanceChk.checked && !customSigImage) {
+    els.sigBox.classList.add('active');
+    els.sigBox.style.left = (parseFloat(els.sX.value)||0) + '%';
+    els.sigBox.style.top = (parseFloat(els.sY.value)||0) + '%';
+    els.sigBox.style.width = (parseFloat(els.sW.value)||1) + '%';
+    els.sigBox.style.height = (parseFloat(els.sH.value)||1) + '%';
+  } else {
+    els.sigBox.classList.remove('active');
+  }
+}
+
+[els.pX, els.pY, els.pW, els.pH, els.sX, els.sY, els.sW, els.sH, els.spX, els.spY, els.spW, els.spH].forEach(el => {
+  el.addEventListener('input', () => { updateBoxesUI(); refreshImages(); });
+});
+
+[els.brightnessSlider, els.contrastSlider, els.sigBrightnessSlider, els.sigContrastSlider].forEach(el => {
+  el.addEventListener('input', () => {
+    els.brightnessVal.textContent = els.brightnessSlider.value + '%';
+    els.contrastVal.textContent = els.contrastSlider.value + '%';
+    els.sigBrightnessVal.textContent = els.sigBrightnessSlider.value + '%';
+    els.sigContrastVal.textContent = els.sigContrastSlider.value + '%';
+    refreshImages();
+  });
+});
+
+els.btnResetAdjust.addEventListener('click', () => {
+  els.brightnessSlider.value = 100; els.contrastSlider.value = 100;
+  els.sigBrightnessSlider.value = 100; els.sigContrastSlider.value = 100;
+  els.brightnessVal.textContent = '100%'; els.contrastVal.textContent = '100%';
+  els.sigBrightnessVal.textContent = '100%'; els.sigContrastVal.textContent = '100%';
+  refreshImages();
+});
+
+/* ============================================================
+   FILE UPLOAD LOGIC
+   ============================================================ */
+els.btnReplacePhoto.addEventListener('click', () => els.customPhotoInput.click());
+els.customPhotoInput.addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    customPhotoImage = img; customPhotoTransform = { x: 0, y: 0, scale: 1 };
+    els.btnResetPhoto.style.display = 'inline-flex'; els.photoAdjustControls.style.display = 'flex';
+    els.photoZoomSlider.value = 100; els.photoZoomVal.textContent = '100%';
+    els.frontPreviewContainer.classList.add('custom-active'); refreshImages();
+  };
+  img.src = URL.createObjectURL(file);
+});
+
+els.btnResetPhoto.addEventListener('click', () => {
+  customPhotoImage = null; els.btnResetPhoto.style.display = 'none'; els.photoAdjustControls.style.display = 'none';
+  els.customPhotoInput.value = ''; els.frontPreviewContainer.classList.remove('custom-active');
+  refreshImages();
+});
+
+els.btnResetTransform.addEventListener('click', () => {
+  customPhotoTransform = { x: 0, y: 0, scale: 1 }; els.photoZoomSlider.value = 100; els.photoZoomVal.textContent = '100%'; refreshImages();
+});
+
+els.photoZoomSlider.addEventListener('input', () => {
+  if (!customPhotoImage) return;
+  customPhotoTransform.scale = parseFloat(els.photoZoomSlider.value) / 100;
+  els.photoZoomVal.textContent = Math.round(customPhotoTransform.scale * 100) + '%'; refreshImages();
+});
+
+// Signature Upload
+els.btnReplaceSig.addEventListener('click', () => els.customSigInput.click());
+els.customSigInput.addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new Image();
+    img.onload = () => {
+      // Auto-transparent background for signatures
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width; canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imgData.data;
+      const threshold = 200;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i] > threshold && data[i+1] > threshold && data[i+2] > threshold) {
+          data[i + 3] = 0; // Make transparent
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+      
+      const transparentImg = new Image();
+      transparentImg.onload = () => {
+        customSigImage = transparentImg;
+        customSigTransform = { x: 0, y: 0, scale: 1 }; 
+        els.btnResetSig.style.display = 'inline-flex'; els.sigAdjustControls.style.display = 'flex';
+        els.sigZoomSlider.value = 100; els.sigZoomVal.textContent = '100%';
+        els.sigBrightnessSlider.value = 100; els.sigBrightnessVal.textContent = '100%';
+        els.sigContrastSlider.value = 100; els.sigContrastVal.textContent = '100%';
+        refreshImages();
+      };
+      transparentImg.src = canvas.toDataURL('image/png');
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+els.btnResetSig.addEventListener('click', () => {
+  customSigImage = null; els.btnResetSig.style.display = 'none'; els.sigAdjustControls.style.display = 'none';
+  els.customSigInput.value = ''; refreshImages();
+});
+
+els.btnResetSigTransform.addEventListener('click', () => {
+  customSigTransform = { x: 0, y: 0, scale: 1 }; 
+  els.sigZoomSlider.value = 100; els.sigZoomVal.textContent = '100%';
+  els.sigBrightnessSlider.value = 100; els.sigBrightnessVal.textContent = '100%';
+  els.sigContrastSlider.value = 100; els.sigContrastVal.textContent = '100%';
+  refreshImages();
+});
+
+els.sigZoomSlider.addEventListener('input', () => {
+  if (!customSigImage) return;
+  customSigTransform.scale = parseFloat(els.sigZoomSlider.value) / 100;
+  els.sigZoomVal.textContent = Math.round(customSigTransform.scale * 100) + '%'; refreshImages();
+});
+
+// Small Photo Upload
+els.btnReplaceSmallPhoto.addEventListener('click', () => els.customSmallPhotoInput.click());
+els.customSmallPhotoInput.addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    customSmallPhotoImage = img; customSmallPhotoTransform = { x: 0, y: 0, scale: 1 };
+    els.btnResetSmallPhoto.style.display = 'inline-flex'; els.smallPhotoAdjustControls.style.display = 'flex';
+    els.smallPhotoZoomSlider.value = 100; els.smallPhotoZoomVal.textContent = '100%';
+    refreshImages();
+  };
+  img.src = URL.createObjectURL(file);
+});
+
+els.btnResetSmallPhoto.addEventListener('click', () => {
+  customSmallPhotoImage = null; els.btnResetSmallPhoto.style.display = 'none'; els.smallPhotoAdjustControls.style.display = 'none';
+  els.customSmallPhotoInput.value = ''; refreshImages();
+});
+
+els.btnResetSmallTransform.addEventListener('click', () => {
+  customSmallPhotoTransform = { x: 0, y: 0, scale: 1 }; els.smallPhotoZoomSlider.value = 100; els.smallPhotoZoomVal.textContent = '100%'; refreshImages();
+});
+
+els.smallPhotoZoomSlider.addEventListener('input', () => {
+  if (!customSmallPhotoImage) return;
+  customSmallPhotoTransform.scale = parseFloat(els.smallPhotoZoomSlider.value) / 100;
+  els.smallPhotoZoomVal.textContent = Math.round(customSmallPhotoTransform.scale * 100) + '%'; refreshImages();
+});
+
+/* ============================================================
+   DRAG LOGIC
+   ============================================================ */
+els.frontPreviewContainer.addEventListener('mousedown', e => {
+  const rect = els.frontPreview.getBoundingClientRect();
+  const mouseX = ((e.clientX - rect.left) / rect.width) * 100;
+  const mouseY = ((e.clientY - rect.top) / rect.height) * 100;
+  
+  const sX = parseFloat(els.sX.value), sY = parseFloat(els.sY.value), sW = parseFloat(els.sW.value), sH = parseFloat(els.sH.value);
+  const pX = parseFloat(els.pX.value), pY = parseFloat(els.pY.value), pW = parseFloat(els.pW.value), pH = parseFloat(els.pH.value);
+  const spX = parseFloat(els.spX.value), spY = parseFloat(els.spY.value), spW = parseFloat(els.spW.value), spH = parseFloat(els.spH.value);
+
+  // Check Small Photo
+  if (state.config.hasSmall && customSmallPhotoImage && mouseX >= spX && mouseX <= spX + spW && mouseY >= spY && mouseY <= spY + spH) {
+    e.preventDefault(); isDraggingSmallPhoto = true;
+    dragStartX = e.clientX; dragStartY = e.clientY;
+    dragStartTransformX = customSmallPhotoTransform.x; dragStartTransformY = customSmallPhotoTransform.y;
+    return;
+  }
+
+  // Check Signature
+  if (state.config.hasSig && customSigImage && mouseX >= sX && mouseX <= sX + sW && mouseY >= sY && mouseY <= sY + sH) {
+    e.preventDefault(); isDraggingSig = true;
+    dragStartX = e.clientX; dragStartY = e.clientY;
+    dragStartTransformX = customSigTransform.x; dragStartTransformY = customSigTransform.y;
+    return;
+  }
+
+  // Check Main Photo
+  if (customPhotoImage && mouseX >= pX && mouseX <= pX + pW && mouseY >= pY && mouseY <= pY + pH) {
+    e.preventDefault(); isDraggingPhoto = true;
+    dragStartX = e.clientX; dragStartY = e.clientY;
+    dragStartTransformX = customPhotoTransform.x; dragStartTransformY = customPhotoTransform.y;
+    return;
+  }
+  
+  // Draw new Photo Box
+  if (!els.enhanceChk.checked) return;
+  e.preventDefault(); isDragging = true;
+  startX = Math.max(0, Math.min(100, mouseX));
+  startY = Math.max(0, Math.min(100, mouseY));
+  
+  els.photoBox.style.left = startX + '%'; els.photoBox.style.top = startY + '%';
+  els.photoBox.style.width = '0%'; els.photoBox.style.height = '0%'; els.photoBox.classList.add('active');
+});
+
+window.addEventListener('mousemove', e => {
+  const rect = els.frontPreview.getBoundingClientRect();
+  const scaleX = state.rawFrontCanvas ? state.rawFrontCanvas.width / rect.width : 1;
+  const scaleY = state.rawFrontCanvas ? state.rawFrontCanvas.height / rect.height : 1;
+
+  if (isDraggingSmallPhoto) {
+    const dx = e.clientX - dragStartX; const dy = e.clientY - dragStartY;
+    customSmallPhotoTransform.x = dragStartTransformX + dx * scaleX;
+    customSmallPhotoTransform.y = dragStartTransformY + dy * scaleY;
+    refreshImages(); return;
+  }
+
+  if (isDraggingSig) {
+    const dx = e.clientX - dragStartX; const dy = e.clientY - dragStartY;
+    customSigTransform.x = dragStartTransformX + dx * scaleX;
+    customSigTransform.y = dragStartTransformY + dy * scaleY;
+    refreshImages(); return;
+  }
+
+  if (isDraggingPhoto) {
+    const dx = e.clientX - dragStartX; const dy = e.clientY - dragStartY;
+    customPhotoTransform.x = dragStartTransformX + dx * scaleX;
+    customPhotoTransform.y = dragStartTransformY + dy * scaleY;
+    refreshImages(); return;
+  }
+  
+  if (!isDragging) return;
+  let currentX = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+  let currentY = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+
+  const xPct = Math.min(startX, currentX); const yPct = Math.min(startY, currentY);
+  const wPct = Math.abs(currentX - startX); const hPct = Math.abs(currentY - startY);
+
+  els.photoBox.style.left = xPct + '%'; els.photoBox.style.top = yPct + '%';
+  els.photoBox.style.width = wPct + '%'; els.photoBox.style.height = hPct + '%';
+});
+
+window.addEventListener('mouseup', () => {
+  if (isDraggingSmallPhoto) { isDraggingSmallPhoto = false; return; }
+  if (isDraggingSig) { isDraggingSig = false; return; }
+  if (isDraggingPhoto) { isDraggingPhoto = false; return; }
+  if (!isDragging) return;
+  isDragging = false;
+  
+  els.pX.value = parseFloat(els.photoBox.style.left).toFixed(1) || 0;
+  els.pY.value = parseFloat(els.photoBox.style.top).toFixed(1) || 0;
+  els.pW.value = parseFloat(els.photoBox.style.width).toFixed(1) || 1;
+  els.pH.value = parseFloat(els.photoBox.style.height).toFixed(1) || 1;
+  refreshImages();
+});
+
+/* ============================================================
+   IMAGE PROCESSING
+   ============================================================ */
+function processImage(canvas, isFront) {
+  const w = canvas.width; const h = canvas.height;
+  const out = document.createElement('canvas'); out.width = w; out.height = h;
+  const ctx = out.getContext('2d');
+
+  // Base enhancement
+  if (els.enhanceChk.checked) {
+    ctx.filter = 'contrast(1.08) brightness(1.02)';
+    ctx.drawImage(canvas, 0, 0); ctx.filter = 'none';
+  } else {
+    ctx.drawImage(canvas, 0, 0);
+  }
+
+  // Targeted photo enhancement
+  if (isFront && !customPhotoImage && els.enhanceChk.checked) {
+    const bx = parseFloat(els.pX.value) / 100; const by = parseFloat(els.pY.value) / 100;
+    const bw = parseFloat(els.pW.value) / 100; const bh = parseFloat(els.pH.value) / 100;
+
+    if (bw > 0.01 && bh > 0.01) {
+      ctx.save(); ctx.beginPath(); ctx.rect(bx * w, by * h, bw * w, bh * h); ctx.clip();
+      const b = parseFloat(els.brightnessSlider.value) / 100; const c = parseFloat(els.contrastSlider.value) / 100;
+      ctx.filter = `brightness(${b}) contrast(${c}) contrast(1.15) saturate(1.1)`;
+      ctx.drawImage(canvas, 0, 0); ctx.restore();
+    }
+  }
+  return out;
+}
+
+function refreshImages() {
+  if (!state.rawFrontCanvas) return;
+  updateBoxesUI();
+
+  els.enhanceToggle.classList.toggle('active', els.enhanceChk.checked);
+  let baseFront = state.rawFrontCanvas;
+
+  // 1. Draw Custom Main Photo
+  if (customPhotoImage) {
+    const tempCanvas = document.createElement('canvas'); tempCanvas.width = baseFront.width; tempCanvas.height = baseFront.height;
+    const tctx = tempCanvas.getContext('2d'); tctx.drawImage(baseFront, 0, 0);
+    const pX = parseFloat(els.pX.value) / 100; const pY = parseFloat(els.pY.value) / 100;
+    const pW = parseFloat(els.pW.value) / 100; const pH = parseFloat(els.pH.value) / 100;
+    const tx = pX * baseFront.width; const ty = pY * baseFront.height; const tw = pW * baseFront.width; const th = pH * baseFront.height;
+    const iw = customPhotoImage.width; const ih = customPhotoImage.height;
+    const baseScale = Math.max(tw / iw, th / ih); const finalScale = baseScale * customPhotoTransform.scale;
+    const dw = iw * finalScale; const dh = ih * finalScale;
+    const dx = tx + (tw - dw) / 2 + customPhotoTransform.x; const dy = ty + (th - dh) / 2 + customPhotoTransform.y;
+    
+    tctx.save(); tctx.beginPath(); tctx.rect(tx, ty, tw, th); tctx.clip();
+    if (els.enhanceChk.checked) tctx.filter = 'contrast(1.08) brightness(1.02) contrast(1.15) saturate(1.1)';
+    tctx.drawImage(customPhotoImage, dx, dy, dw, dh); tctx.restore();
+    baseFront = tempCanvas;
+  }
+
+  // 2. Draw Small Photo (B&W)
+  if (state.config.hasSmall && customSmallPhotoImage) {
+    const tempCanvas = document.createElement('canvas'); tempCanvas.width = baseFront.width; tempCanvas.height = baseFront.height;
+    const tctx = tempCanvas.getContext('2d'); tctx.drawImage(baseFront, 0, 0);
+    const sX = parseFloat(els.spX.value) / 100; const sY = parseFloat(els.spY.value) / 100;
+    const sW = parseFloat(els.spW.value) / 100; const sH = parseFloat(els.spH.value) / 100;
+    const tx = sX * baseFront.width; const ty = sY * baseFront.height; const tw = sW * baseFront.width; const th = sH * baseFront.height;
+    const iw = customSmallPhotoImage.width; const ih = customSmallPhotoImage.height;
+    const baseScale = Math.max(tw / iw, th / ih); const finalScale = baseScale * customSmallPhotoTransform.scale;
+    const dw = iw * finalScale; const dh = ih * finalScale;
+    const dx = tx + (tw - dw) / 2 + customSmallPhotoTransform.x; const dy = ty + (th - dh) / 2 + customSmallPhotoTransform.y;
+    
+    tctx.save(); tctx.beginPath(); tctx.rect(tx, ty, tw, th); tctx.clip();
+    tctx.filter = 'grayscale(1) contrast(1.1)';
+    tctx.drawImage(customSmallPhotoImage, dx, dy, dw, dh); tctx.restore();
+    baseFront = tempCanvas;
+  }
+
+  // 3. Draw Signature
+  if (state.config.hasSig && customSigImage) {
+    const tempCanvas = document.createElement('canvas'); tempCanvas.width = baseFront.width; tempCanvas.height = baseFront.height;
+    const tctx = tempCanvas.getContext('2d'); tctx.drawImage(baseFront, 0, 0);
+    const sX = parseFloat(els.sX.value) / 100; const sY = parseFloat(els.sY.value) / 100;
+    const sW = parseFloat(els.sW.value) / 100; const sH = parseFloat(els.sH.value) / 100;
+    const tx = sX * baseFront.width; const ty = sY * baseFront.height; const tw = sW * baseFront.width; const th = sH * baseFront.height;
+    const iw = customSigImage.width; const ih = customSigImage.height;
+    const baseScale = Math.max(tw / iw, th / ih); const finalScale = baseScale * customSigTransform.scale;
+    const dw = iw * finalScale; const dh = ih * finalScale;
+    const dx = tx + (tw - dw) / 2 + customSigTransform.x; const dy = ty + (th - dh) / 2 + customSigTransform.y;
+    
+    tctx.save(); tctx.beginPath(); tctx.rect(tx, ty, tw, th); tctx.clip();
+    const sb = parseFloat(els.sigBrightnessSlider.value) / 100;
+    const sc = parseFloat(els.sigContrastSlider.value) / 100;
+    tctx.filter = `brightness(${sb}) contrast(${sc})`;
+    tctx.drawImage(customSigImage, dx, dy, dw, dh); tctx.restore();
+    baseFront = tempCanvas;
+  }
+
+  state.frontCanvas = processImage(baseFront, true);
+  state.backCanvas  = processImage(state.rawBackCanvas, false);
+
+  els.frontPreview.src = state.frontCanvas.toDataURL('image/png');
+  els.backPreview.src  = state.backCanvas.toDataURL('image/png');
+  buildSheets();
+}
+
+/* ============================================================
+   FILE HANDLING
+   ============================================================ */
+els.browseBtn.addEventListener('click', e => { e.stopPropagation(); els.fileInput.click(); });
+els.dropZone.addEventListener('click', () => els.fileInput.click());
+els.fileInput.addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0];
+  if (f) handleFile(f);
+  els.fileInput.value = '';
+});
+
+['dragenter', 'dragover'].forEach(ev => els.dropZone.addEventListener(ev, e => { e.preventDefault(); els.dropZone.classList.add('drag'); }));
+['dragleave', 'drop'].forEach(ev => els.dropZone.addEventListener(ev, e => { e.preventDefault(); els.dropZone.classList.remove('drag'); }));
+els.dropZone.addEventListener('drop', e => {
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+
+async function handleFile(file) {
+  if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') {
+    setStatus('Please upload a PDF file.', 'err'); return;
+  }
+  setStatus('Reading PDF…');
+  try {
+    const buf = await file.arrayBuffer();
+    state.pdfBytes = new Uint8Array(buf);
+    state.fileName = file.name.replace(/\.pdf$/i, '').replace(/[^\w\-]+/g, '_') || 'idcard';
+    await openPdf(null);
+  } catch (err) {
+    console.error(err); setStatus('Could not read the file: ' + err.message, 'err');
+  }
+}
+
+async function openPdf(password) {
+  if (!state.pdfBytes) return;
+  const data = state.pdfBytes.slice(0);
+  const task = pdfjsLib.getDocument({ data, password: password || undefined });
+
+  try {
+    const doc = await task.promise;
+    state.pdfDoc = doc; hidePasswordModal();
+    els.dropZone.classList.add('hidden'); els.workspace.classList.remove('hidden');
+    await extractCards();
+  } catch (err) {
+    if (err && err.name === 'PasswordException') { showPasswordModal(err.code === 2); return; }
+    console.error(err); setStatus('Failed to open PDF: ' + (err.message || err), 'err');
+  }
+}
+
+function showPasswordModal(wrong) {
+  els.pwdMsg.textContent = wrong ? 'Incorrect password. Please try again.' : 'This PDF is encrypted. Enter the password to continue.';
+  els.pwdInput.value = ''; els.pwdModal.classList.remove('hidden');
+  setTimeout(() => els.pwdInput.focus(), 50);
+}
+function hidePasswordModal() { els.pwdModal.classList.add('hidden'); els.pwdInput.value = ''; }
+els.pwdOk.addEventListener('click', () => { const pwd = els.pwdInput.value; if (!pwd) return; hidePasswordModal(); setStatus('Unlocking PDF…'); openPdf(pwd); });
+els.pwdCancel.addEventListener('click', () => { hidePasswordModal(); setStatus('Cancelled.', 'err'); });
+els.pwdInput.addEventListener('keydown', e => { if (e.key === 'Enter') els.pwdOk.click(); });
+
+/* ============================================================
+   EXTRACTION
+   ============================================================ */
+async function renderRegion(page, region, renderScale, scaleX, scaleY) {
+  const viewport = page.getViewport({ scale: renderScale });
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = Math.round(viewport.width); tempCanvas.height = Math.round(viewport.height);
+  const tempCtx = tempCanvas.getContext('2d'); tempCtx.fillStyle = '#ffffff'; tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+  await page.render({ canvasContext: tempCtx, viewport }).promise;
+  const w = Math.max(1, Math.round(region.width * scaleX)); const h = Math.max(1, Math.round(region.height * scaleY));
+  const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(tempCanvas, region.x * scaleX, region.y * scaleY, region.width * scaleX, region.height * scaleY, 0, 0, w, h);
+  return canvas;
+}
+
+async function extractCards() {
+  if (state.busy || !state.pdfDoc) return;
+  state.busy = true;
+  setStatus('Extracting ' + state.config.name + ' front & back...');
+
+  try {
+    const dpi = parseInt(els.dpiSelect.value, 10) || 300;
+    const targetCardPx = (88 / 25.4) * dpi;
+    const scaleX = targetCardPx / state.config.cal.front.width;
+    const renderedPageWidth = state.config.cal.page.w * scaleX;
+
+    // Front Page
+    const page1 = await state.pdfDoc.getPage(state.config.cal.front.page || 1);
+    const base1 = page1.getViewport({ scale: 1 });
+    const renderScale1 = renderedPageWidth / base1.width;
+    const scaleY1 = (base1.height * renderScale1) / state.config.cal.page.h;
+    state.rawFrontCanvas = await renderRegion(page1, state.config.cal.front, renderScale1, scaleX, scaleY1);
+
+    // Back Page (Handle Multi-page)
+    let backPageNum = 1;
+    if (state.config.multiPage) {
+      backPageNum = state.pdfDoc.numPages >= state.config.cal.back.page ? state.config.cal.back.page : 1;
+    } else {
+      backPageNum = 1;
+    }
+    const page2 = await state.pdfDoc.getPage(backPageNum);
+    const base2 = page2.getViewport({ scale: 1 });
+    const renderScale2 = renderedPageWidth / base2.width;
+    const scaleY2 = (base2.height * renderScale2) / state.config.cal.page.h;
+    state.rawBackCanvas = await renderRegion(page2, state.config.cal.back, renderScale2, scaleX, scaleY2);
+
+    refreshImages();
+    setStatus(`Done · Front ${state.frontCanvas.width}×${state.frontCanvas.height}px · Back ${state.backCanvas.width}×${state.backCanvas.height}px`, 'ok');
+  } catch (err) {
+    console.error(err); setStatus('Extraction failed: ' + (err.message || err), 'err');
+  } finally {
+    state.busy = false;
+  }
+}
+
+/* ============================================================
+   LAYOUT BUILDER & RENDERING
+   ============================================================ */
+function buildLayout(kind, gapMm, mTop, mBottom, mLeft, mRight) {
+  const pages = [];
+  const CARD_W_MM = 88; const CARD_H_MM = 58;
+  const totalW = CARD_W_MM * 2 + gapMm; const totalH = CARD_H_MM * 2 + gapMm;
+
+  if (kind === 'A4') {
+    const w = 210, h = 297;
+    const x0 = mLeft + Math.max(0, (w - mLeft - mRight - totalW) / 2); const y0 = mTop;
+    pages.push({ wMm: w, hMm: h, items: [
+      { src: 'front', xMm: x0, yMm: y0, wMm: CARD_W_MM, hMm: CARD_H_MM, rot: 0 },
+      { src: 'back',  xMm: x0 + CARD_W_MM + gapMm, yMm: y0, wMm: CARD_W_MM, hMm: CARD_H_MM, rot: 0 }
+    ], fold: { x1: x0 + CARD_W_MM + gapMm / 2, y1: y0 - 3, x2: x0 + CARD_W_MM + gapMm / 2, y2: y0 + CARD_H_MM + 3 } });
+  } else if (kind === '4x6') {
+    const w = 101.6, h = 152.4;
+    const x0 = mLeft + Math.max(0, (w - mLeft - mRight - CARD_W_MM) / 2);
+    const y0 = mTop + Math.max(0, (h - mTop - mBottom - totalH) / 2);
+    pages.push({ wMm: w, hMm: h, items: [
+      { src: 'front', xMm: x0, yMm: y0, wMm: CARD_W_MM, hMm: CARD_H_MM, rot: 0 },
+      { src: 'back',  xMm: x0, yMm: y0 + CARD_H_MM + gapMm, wMm: CARD_W_MM, hMm: CARD_H_MM, rot: 180 }
+    ], fold: { x1: x0 - 3, y1: y0 + CARD_H_MM + gapMm / 2, x2: x0 + CARD_W_MM + 3, y2: y0 + CARD_H_MM + gapMm / 2 } });
+  } else {
+    const w = 85.6, h = 54;
+    const s = Math.min(w / CARD_W_MM, h / CARD_H_MM);
+    const cw = CARD_W_MM * s; const ch = CARD_H_MM * s; const cx = (w - cw) / 2; const cy = (h - ch) / 2;
+    pages.push({ wMm: w, hMm: h, items: [{ src: 'front', xMm: cx, yMm: cy, wMm: cw, hMm: ch, rot: 0 }] });
+    pages.push({ wMm: w, hMm: h, items: [{ src: 'back',  xMm: cx, yMm: cy, wMm: cw, hMm: ch, rot: 0 }] });
+  }
+  return pages;
+}
+
+function drawCard(ctx, img, x, y, w, h, rot, mode) {
+  ctx.save(); ctx.translate(x + w / 2, y + h / 2); if (rot) ctx.rotate(rot * Math.PI / 180);
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  if (mode === 'fit') {
+    const s = Math.min(w / img.width, h / img.height); const dw = img.width * s, dh = img.height * s;
+    ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+  } else {
+    ctx.drawImage(img, -w / 2, -h / 2, w, h);
+  }
+  ctx.restore();
+}
+
+function drawGuides(ctx, page, ppm) {
+  ctx.save(); ctx.strokeStyle = 'rgba(140,150,165,0.9)'; ctx.lineWidth = Math.max(1, 0.12 * ppm); ctx.setLineDash([1.5 * ppm, 1.5 * ppm]);
+  for (const it of page.items) ctx.strokeRect(it.xMm * ppm, it.yMm * ppm, it.wMm * ppm, it.hMm * ppm);
+  if (page.fold) {
+    ctx.strokeStyle = 'rgba(225,80,80,0.95)'; ctx.lineWidth = Math.max(1, 0.16 * ppm); ctx.setLineDash([2.2 * ppm, 1.8 * ppm]);
+    ctx.beginPath(); ctx.moveTo(page.fold.x1 * ppm, page.fold.y1 * ppm); ctx.lineTo(page.fold.x2 * ppm, page.fold.y2 * ppm); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function renderSheet(page, dpi, guides, fitMode) {
+  const ppm = dpi / 25.4; const canvas = document.createElement('canvas');
+  canvas.width = Math.round(page.wMm * ppm); canvas.height = Math.round(page.hMm * ppm);
+  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (const it of page.items) {
+    const src = it.src === 'front' ? state.frontCanvas : state.backCanvas;
+    if (!src) continue;
+    drawCard(ctx, src, it.xMm * ppm, it.yMm * ppm, it.wMm * ppm, it.hMm * ppm, it.rot, fitMode);
+  }
+  if (page.items && page.items.length > 0) {
+    const minX = Math.min(...page.items.map(i => i.xMm)); const minY = Math.min(...page.items.map(i => i.yMm));
+    const maxX = Math.max(...page.items.map(i => i.xMm + i.wMm)); const maxY = Math.max(...page.items.map(i => i.yMm + i.hMm));
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.strokeRect(minX * ppm, minY * ppm, (maxX - minX) * ppm, (maxY - minY) * ppm);
+  }
+  if (guides) drawGuides(ctx, page, ppm);
+  return canvas;
+}
+
+function buildSheets() {
+  if (!state.frontCanvas || !state.backCanvas) return;
+  const gap = Math.max(0, parseFloat(els.gapInput.value) || 0); const dpi = parseInt(els.dpiSelect.value, 10) || 300;
+  const guides = els.guideChk.checked; const fitMode = els.fitSelect.value;
+  const mT = Math.max(0, parseFloat(els.mTop.value) || 0); const mB = Math.max(0, parseFloat(els.mBottom.value) || 0);
+  const mL = Math.max(0, parseFloat(els.mLeft.value) || 0); const mR = Math.max(0, parseFloat(els.mRight.value) || 0);
+
+  state.layoutPages = buildLayout(state.layout, gap, mT, mB, mL, mR);
+  state.sheetCanvases = state.layoutPages.map(p => renderSheet(p, dpi, guides, fitMode));
+
+  els.sheetPreview.innerHTML = '';
+  state.sheetCanvases.forEach((cv, i) => {
+    const item = document.createElement('div'); item.className = 'sheet-item';
+    const img = document.createElement('img'); img.src = cv.toDataURL('image/png'); img.alt = 'Sheet ' + (i + 1);
+    const label = document.createElement('span'); const p = state.layoutPages[i];
+    label.textContent = (state.sheetCanvases.length > 1 ? `Card ${i + 1} · ` : '') + `${p.wMm.toFixed(1)} × ${p.hMm.toFixed(1)} mm`;
+    item.appendChild(img); item.appendChild(label); els.sheetPreview.appendChild(item);
+  });
+}
+
+/* ============================================================
+   MINIMAL PDF WRITER & ACTIONS
+   ============================================================ */
+function buildPDF(pages) {
+  const enc = new TextEncoder(); const parts = []; let pos = 0; const offsets = {};
+  const add = (x) => { const u8 = (typeof x === 'string') ? enc.encode(x) : x; parts.push(u8); pos += u8.length; };
+  const startObj = (n) => { offsets[n] = pos; add(`${n} 0 obj\n`); }; const endObj = () => add('\nendobj\n');
+  add('%PDF-1.4\n'); const n = pages.length; const pageIds = [], contentIds = [], imgIds = [];
+  for (let i = 0; i < n; i++) { pageIds.push(3 + i * 3); contentIds.push(4 + i * 3); imgIds.push(5 + i * 3); }
+  const total = 2 + 3 * n;
+  startObj(1); add('<< /Type /Catalog /Pages 2 0 R >>'); endObj();
+  startObj(2); add(`<< /Type /Pages /Kids [${pageIds.map(id => `${id} 0 R`).join(' ')}] /Count ${n} >>`); endObj();
+  for (let i = 0; i < n; i++) {
+    const p = pages[i]; const wPt = p.wMm * 72 / 25.4; const hPt = p.hMm * 72 / 25.4;
+    startObj(pageIds[i]); add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${wPt.toFixed(3)} ${hPt.toFixed(3)}] /Resources << /XObject << /Im0 ${imgIds[i]} 0 R >> /ProcSet [/PDF /ImageC] >> /Contents ${contentIds[i]} 0 R >>`); endObj();
+    const content = `q\n${wPt.toFixed(3)} 0 0 ${hPt.toFixed(3)} 0 0 cm\n/Im0 Do\nQ`;
+    startObj(contentIds[i]); add(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`); endObj();
+    startObj(imgIds[i]); add(`<< /Type /XObject /Subtype /Image /Width ${p.wPx} /Height ${p.hPx} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.jpeg.length} >>\nstream\n`);
+    add(p.jpeg); add('\nendstream'); endObj();
+  }
+  const xrefPos = pos; let xref = `xref\n0 ${total + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i <= total; i++) xref += String(offsets[i] || 0).padStart(10, '0') + ' 00000 n \n';
+  add(xref); add(`trailer\n<< /Size ${total + 1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF\n`);
+  const out = new Uint8Array(pos); let o = 0; for (const part of parts) { out.set(part, o); o += part.length; } return out;
+}
+
+function layoutChanged(kind) {
+  state.layout = kind;
+  [...els.layoutSeg.children].forEach(b => b.classList.toggle('active', b.dataset.layout === kind));
+  buildSheets();
+}
+els.layoutSeg.addEventListener('click', e => { const btn = e.target.closest('button[data-layout]'); if (btn) layoutChanged(btn.dataset.layout); });
+
+els.gapInput.addEventListener('input', buildSheets); els.guideChk.addEventListener('change', buildSheets);
+els.fitSelect.addEventListener('change', buildSheets); els.dpiSelect.addEventListener('change', () => extractCards());
+[els.mTop, els.mBottom, els.mLeft, els.mRight].forEach(el => el.addEventListener('input', buildSheets));
+els.enhanceChk.addEventListener('change', refreshImages);
+
+els.dlFront.addEventListener('click', () => { if (state.frontCanvas) state.frontCanvas.toBlob(b => downloadBlob(b, `${state.fileName}_front.png`), 'image/png'); });
+els.dlBack.addEventListener('click', () => { if (state.backCanvas) state.backCanvas.toBlob(b => downloadBlob(b, `${state.fileName}_back.png`), 'image/png'); });
+
+function notifyParentPrint() {
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'ilp-one-click-card-print', tool: state.currentTool || 'idcard' }, '*');
+    }
+  } catch (e) {}
+}
+
+els.btnCombinedPng.addEventListener('click', () => {
+  if (!state.sheetCanvases.length) return;
+  notifyParentPrint();
+  if (state.sheetCanvases.length === 1) { state.sheetCanvases[0].toBlob(b => downloadBlob(b, `${state.fileName}_${state.layout}_combined.png`), 'image/png'); return; }
+  const gapPx = 20; const w = Math.max(...state.sheetCanvases.map(c => c.width)); const h = state.sheetCanvases.reduce((a, c) => a + c.height, 0) + gapPx * (state.sheetCanvases.length - 1);
+  const out = document.createElement('canvas'); out.width = w; out.height = h; const ctx = out.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+  let y = 0; for (const c of state.sheetCanvases) { ctx.drawImage(c, Math.round((w - c.width) / 2), y); y += c.height + gapPx; }
+  out.toBlob(b => downloadBlob(b, `${state.fileName}_${state.layout}_combined.png`), 'image/png');
+});
+
+els.btnCombinedPdf.addEventListener('click', () => {
+  if (!state.sheetCanvases.length) return; setStatus('Building print-ready PDF…');
+  try {
+    notifyParentPrint();
+    const pages = state.sheetCanvases.map((cv, i) => ({ jpeg: canvasToJpegBytes(cv, 0.94), wPx: cv.width, hPx: cv.height, wMm: state.layoutPages[i].wMm, hMm: state.layoutPages[i].hMm }));
+    downloadBlob(new Blob([buildPDF(pages)], { type: 'application/pdf' }), `${state.fileName}_${state.layout}_print.pdf`); setStatus('Print-ready PDF downloaded.', 'ok');
+  } catch (err) { console.error(err); setStatus('PDF export failed: ' + err.message, 'err'); }
+});
+
+els.btnPrint.addEventListener('click', async () => {
+  if (!state.sheetCanvases.length) return;
+  notifyParentPrint();
+  const first = state.layoutPages[0];
+  els.printStyle.textContent = `@page { size: ${first.wMm.toFixed(2)}mm ${first.hMm.toFixed(2)}mm; margin: 0; }`; els.printArea.innerHTML = '';
+  for (let i = 0; i < state.sheetCanvases.length; i++) {
+    const p = state.layoutPages[i]; const img = new Image(); img.className = 'print-page';
+    img.style.width = p.wMm.toFixed(2) + 'mm'; img.style.height = p.hMm.toFixed(2) + 'mm';
+    img.src = state.sheetCanvases[i].toDataURL('image/png'); els.printArea.appendChild(img);
+    await new Promise(res => { img.complete ? res() : (img.onload = img.onerror = res); });
+  }
+  setTimeout(() => window.print(), 120);
+});
+
+els.btnReset.addEventListener('click', () => {
+  resetState();
+  els.fileInput.click();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !els.pwdModal.classList.contains('hidden')) els.pwdCancel.click();
+});
+
+if (!window.pdfjsLib) setStatus('PDF engine failed to load. Check your internet connection.', 'err');
+
+})();
+</script>
+</body>
+</html>
