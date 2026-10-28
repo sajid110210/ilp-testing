@@ -4,10 +4,6 @@
 <head>
 
 
-  <!-- Cashfree Checkout SDK v3 -->
-  <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
-
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>iLovePrint.in · Ultra 300 DPI Smart ID, Passport Photo Studio & AI Cutout Suite</title>
@@ -8192,28 +8188,100 @@ ILP_AUTH.submitRegistration = async function () {
 <!-- ============ END iLovePrint ADD-ON v6 ============ -->
 
 <!-- ============================================================
-     iLovePrint ADD-ON v7 — Cashfree & Points Wallet Engine
+     iLovePrint ADD-ON v7 — Cashfree & Points Wallet Engine (Lazy Load)
      ============================================================ -->
 <script>
 (function () {
   'use strict';
 
-  // Set mode to "production" for real transactions, or "sandbox" for testing
-  const cashfree = Cashfree({ mode: "production" });
+  let cashfreeInstance = null;
+
+  // Instant fallback loader (in case busy() is delayed)
+  let instantLoaderEl = null;
+  function showInstantLoader(msg) {
+    if (instantLoaderEl) {
+      const msgEl = instantLoaderEl.querySelector('#ilpInstantMsg');
+      if (msgEl) msgEl.textContent = msg || 'Loading...';
+      instantLoaderEl.style.display = 'flex';
+      return;
+    }
+    instantLoaderEl = document.createElement('div');
+    instantLoaderEl.id = 'ilpInstantLoader';
+    instantLoaderEl.style.cssText = 'position:fixed;inset:0;background:rgba(6,12,26,0.72);backdrop-filter:blur(5px);z-index:999999;display:flex;align-items:center;justify-content:center;font-family:inherit;';
+    instantLoaderEl.innerHTML = `
+      <div style="background:#fff;padding:28px 36px;border-radius:18px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4);min-width:260px;">
+        <div style="width:42px;height:42px;border:4px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;margin:0 auto 16px;animation:ilpSpin 0.7s linear infinite;"></div>
+        <div id="ilpInstantMsg" style="font-size:15px;font-weight:700;color:#0f172a;">${msg || 'Loading Payment Gateway...'}</div>
+        <div style="font-size:12px;color:#64748b;margin-top:6px;">Please wait...</div>
+      </div>
+      <style>@keyframes ilpSpin{to{transform:rotate(360deg)}}</style>
+    `;
+    document.body.appendChild(instantLoaderEl);
+  }
+  function hideInstantLoader() {
+    if (instantLoaderEl) instantLoaderEl.style.display = 'none';
+  }
+
+  // Lazy load Cashfree SDK only when user clicks Pay
+  async function loadCashfreeSDK() {
+    if (cashfreeInstance) return cashfreeInstance;
+
+    return new Promise((resolve, reject) => {
+      // Already loaded?
+      if (window.Cashfree) {
+        cashfreeInstance = window.Cashfree({ mode: "production" });
+        return resolve(cashfreeInstance);
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+      script.async = true;
+
+      script.onload = () => {
+        try {
+          cashfreeInstance = window.Cashfree({ mode: "production" });
+          resolve(cashfreeInstance);
+        } catch (err) {
+          reject(err);
+        }
+      };
+
+      script.onerror = () => {
+        reject(new Error('Failed to load Cashfree SDK. Please check your internet connection.'));
+      };
+
+      document.head.appendChild(script);
+    });
+  }
 
   const ILP_CASHFREE = {
     async startPayment(amount, planType, pointsCount) {
       const acc = ILP_AUTH.getAccount();
       if (!acc) return ILP_AUTH.showRegistration();
 
-      const cloudUrl = (window.ILP_SETTINGS && window.ILP_SETTINGS.sheetUrl()) ? window.ILP_SETTINGS.sheetUrl() : (typeof GOOGLE_SHEET_API_URL !== 'undefined' ? GOOGLE_SHEET_API_URL : '');
+      const cloudUrl = (window.ILP_SETTINGS && window.ILP_SETTINGS.sheetUrl()) 
+        ? window.ILP_SETTINGS.sheetUrl() 
+        : (typeof GOOGLE_SHEET_API_URL !== 'undefined' ? GOOGLE_SHEET_API_URL : '');
+      
       if (!cloudUrl) {
         alert("Google Apps Script URL is missing in Settings.");
         return;
       }
 
+      // === INSTANT LOADING OVERLAY (shows in 0ms) ===
+      if (typeof busy === 'function') {
+        busy(true, 'Loading Payment Gateway...');
+      } else {
+        // Fallback if busy() is not available
+        showInstantLoader('Loading Payment Gateway...');
+      }
+
       try {
-        if (typeof busy === 'function') busy(true, 'Initializing Cashfree payment...');
+        // Load Cashfree SDK only now (lazy)
+        const cashfree = await loadCashfreeSDK();
+
+        // Update message
+        if (typeof busy === 'function') busy(true, 'Creating payment order...');
 
         // 1. Request Order Creation from Backend
         const res = await fetch(cloudUrl + (cloudUrl.includes('?') ? '&' : '?') + new URLSearchParams({
@@ -8225,18 +8293,25 @@ ILP_AUTH.submitRegistration = async function () {
         }));
 
         const data = await res.json();
-        if (typeof busy === 'function') busy(false);
 
         if (!data.ok || !data.paymentSessionId) {
+          if (typeof busy === 'function') busy(false);
+          hideInstantLoader();
           alert("Order creation failed: " + (data.msg || "Unknown error"));
           return;
         }
+
+        // Update message
+        if (typeof busy === 'function') busy(true, 'Opening secure payment page...');
 
         // 2. Open Cashfree Hosted Checkout Modal
         cashfree.checkout({
           paymentSessionId: data.paymentSessionId,
           redirectTarget: "_modal"
         }).then(async function (result) {
+          if (typeof busy === 'function') busy(false);
+          hideInstantLoader();
+
           if (result.error) {
             alert(result.error.message || "Payment cancelled.");
           }
@@ -8244,10 +8319,15 @@ ILP_AUTH.submitRegistration = async function () {
             // 3. Verify Payment on Backend
             await ILP_CASHFREE.verifyPayment(data.orderId);
           }
+        }).catch(function(err) {
+          if (typeof busy === 'function') busy(false);
+          hideInstantLoader();
+          alert("Payment window error: " + (err.message || err));
         });
 
       } catch (err) {
         if (typeof busy === 'function') busy(false);
+        hideInstantLoader();
         console.error(err);
         alert("Network error while starting checkout: " + err.message);
       }
@@ -8271,7 +8351,6 @@ ILP_AUTH.submitRegistration = async function () {
           acc.rechargeDate = Date.now();
           var planType = String(data.planType || (data.user && data.user.plan_type) || 'POINTS').toUpperCase();
           if (planType === 'UNLIMITED') {
-            // Exactly 1 month from now (or server-provided valid date)
             var ed = data.expiryDate ? Date.parse(data.expiryDate) : NaN;
             if (!ed || isNaN(ed) || ed < Date.now()) {
               ed = Date.now() + 30 * 86400000;
@@ -8279,7 +8358,6 @@ ILP_AUTH.submitRegistration = async function () {
             acc.expiryDate = ed;
             acc.plan_type = 'UNLIMITED';
           } else {
-            // POINTS — never set validity
             const pts = Number(
               data.currentPoints != null ? data.currentPoints
                 : (data.user && data.user.points_balance != null ? data.user.points_balance : data.points)
@@ -8310,19 +8388,16 @@ ILP_AUTH.submitRegistration = async function () {
 
   /* ------------------- Centralized Wallet Rules ------------------- */
   window.ILP_WALLET = {
-    // Check if user is eligible to perform an action
     canUse(cost = 1) {
       const acc = ILP_AUTH.getAccount();
       const adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
       if (adminIn) return true;
       if (!acc) { ILP_AUTH.showRegistration(); return false; }
 
-      // Rule 1: Monthly Unlimited Pass always grants free unlimited access
       if (acc.status === 'approved' && acc.expiryDate && Date.now() < acc.expiryDate) {
         return true;
       }
 
-      // Rule 2: Point balance validation
       const pts = Number(acc.points_balance) || 0;
       if (pts >= cost) {
         return true;
@@ -8333,13 +8408,11 @@ ILP_AUTH.submitRegistration = async function () {
       return false;
     },
 
-    // Deduct points after successful generation/print
     debit(serviceName, cost = 1) {
       const acc = ILP_AUTH.getAccount();
       const adminIn = sessionStorage.getItem('iloveprint_admin_session') === '1';
       if (adminIn || !acc) return;
 
-      // Do NOT deduct if user has an active unlimited monthly pass
       if (acc.status === 'approved' && acc.expiryDate && Date.now() < acc.expiryDate) {
         return;
       }
@@ -8352,7 +8425,6 @@ ILP_AUTH.submitRegistration = async function () {
       const ptBadge = document.getElementById('ilpUserPointsBadge');
       if (ptBadge) ptBadge.textContent = updatedBalance + ' Pts';
 
-      // Sync deduction with Google Sheet backend
       const cloudUrl = window.ILP_SETTINGS ? window.ILP_SETTINGS.sheetUrl() : GOOGLE_SHEET_API_URL;
       if (cloudUrl) {
         fetch(cloudUrl + (cloudUrl.includes('?') ? '&' : '?') + new URLSearchParams({
@@ -8381,7 +8453,6 @@ ILP_AUTH.submitRegistration = async function () {
 
 })();
 </script>
-
 
 
 <!-- ============================================================
