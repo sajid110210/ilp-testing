@@ -8302,12 +8302,12 @@ ILP_AUTH.submitRegistration = async function () {
         }
 
         // Update message
-        if (typeof busy === 'function') busy(true, 'Opening secure payment page...');
+        if (typeof busy === 'function') busy(true, 'Redirecting to secure payment page...');
 
         // 2. Open Cashfree Hosted Checkout Modal
         cashfree.checkout({
           paymentSessionId: data.paymentSessionId,
-          redirectTarget: "_modal"
+          redirectTarget: "_self"
         }).then(async function (result) {
           if (typeof busy === 'function') busy(false);
           hideInstantLoader();
