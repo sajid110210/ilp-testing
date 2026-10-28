@@ -8304,11 +8304,31 @@ ILP_AUTH.submitRegistration = async function () {
         // Update message
         if (typeof busy === 'function') busy(true, 'Redirecting to secure payment page...');
 
-        // 2. Open Cashfree Hosted Checkout Modal
+        // Save orderId so we can verify after Cashfree redirects back
+        if (data.orderId) {
+          try {
+            localStorage.setItem('ilp_pending_order', JSON.stringify({
+              orderId: data.orderId,
+              amount: amount,
+              planType: planType,
+              points: pointsCount || 0,
+              ts: Date.now()
+            }));
+          } catch(e) {}
+        }
+
+        // 2. Open Cashfree Hosted Checkout (full page)
+        // returnUrl helps Cashfree send user back to our site after payment
+        const returnUrl = window.location.origin + window.location.pathname + 
+                          (window.location.search ? window.location.search + '&' : '?') + 
+                          'ilp_payment=1&order_id=' + encodeURIComponent(data.orderId || '');
+
         cashfree.checkout({
           paymentSessionId: data.paymentSessionId,
-          redirectTarget: "_self"
+          redirectTarget: "_self",
+          returnUrl: returnUrl
         }).then(async function (result) {
+          // This rarely runs with _self, but keep it as backup
           if (typeof busy === 'function') busy(false);
           hideInstantLoader();
 
@@ -8316,13 +8336,12 @@ ILP_AUTH.submitRegistration = async function () {
             alert(result.error.message || "Payment cancelled.");
           }
           if (result.paymentDetails) {
-            // 3. Verify Payment on Backend
             await ILP_CASHFREE.verifyPayment(data.orderId);
           }
         }).catch(function(err) {
           if (typeof busy === 'function') busy(false);
           hideInstantLoader();
-          alert("Payment window error: " + (err.message || err));
+          // With _self this catch also rarely runs
         });
 
       } catch (err) {
@@ -8439,6 +8458,61 @@ ILP_AUTH.submitRegistration = async function () {
   };
 
   window.ILP_CASHFREE = ILP_CASHFREE;
+
+  // ========== AUTO VERIFY AFTER FULL-PAGE RETURN ==========
+  // When Cashfree redirects back, check for pending order and verify it
+  (function autoVerifyOnReturn() {
+    function runVerify() {
+      let pending = null;
+      try {
+        pending = JSON.parse(localStorage.getItem('ilp_pending_order') || 'null');
+      } catch(e) {}
+
+      // Also check URL params (Cashfree may append order_id)
+      const params = new URLSearchParams(window.location.search);
+      const urlOrderId = params.get('order_id') || params.get('orderId') || params.get('cf_order_id');
+      const cameFromPayment = params.get('ilp_payment') === '1' || !!urlOrderId;
+
+      const orderIdToCheck = (pending && pending.orderId) || urlOrderId;
+
+      if (!orderIdToCheck) return;
+
+      // Only auto-verify if order is recent (last 30 minutes)
+      if (pending && pending.ts && (Date.now() - pending.ts > 30 * 60 * 1000)) {
+        localStorage.removeItem('ilp_pending_order');
+        return;
+      }
+
+      // Clean URL so refresh doesn't re-trigger
+      if (cameFromPayment || urlOrderId) {
+        try {
+          const cleanUrl = window.location.origin + window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        } catch(e) {}
+      }
+
+      // Show loading and verify
+      if (typeof busy === 'function') busy(true, 'Confirming your payment...');
+      else if (typeof showInstantLoader === 'function') showInstantLoader('Confirming your payment...');
+
+      ILP_CASHFREE.verifyPayment(orderIdToCheck).then(function() {
+        localStorage.removeItem('ilp_pending_order');
+      }).catch(function() {
+        // keep pending so user can retry via Check Status
+      }).finally(function() {
+        if (typeof busy === 'function') busy(false);
+        if (typeof hideInstantLoader === 'function') hideInstantLoader();
+      });
+    }
+
+    // Run after a short delay so all scripts are ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() { setTimeout(runVerify, 600); });
+    } else {
+      setTimeout(runVerify, 600);
+    }
+  })();
+
 
   // Update Points Badge on refresh
   const origRefreshBadge = window.refreshBadge;
